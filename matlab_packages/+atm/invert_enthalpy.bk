@@ -1,0 +1,66 @@
+function [T,rv,rl,ri] = invert_enthalpy(h,rt,p,T,gamma,type,ice,deltaT)
+% Iteration to calculate Temperature, given the enthalpy, total water
+% content and pressure
+
+c = thermo_constants;
+
+T_err = 1;
+i_iter = 0;
+
+ % Calculate the breakdown of water species based on a guessed temperature
+ [rv,rl,ri] = saturation_adjustment(p,T,rt,type,ice,deltaT);
+
+% Calculate the enthalpy given our guess of the temperature
+if gamma==1
+   % If pseudoadiabatic, remove all the liquid and solid water
+   h_guess = calculate_enthalpy(T,rv,type,ice,deltaT,zeros(size(rv)),zeros(size(rv)));
+else
+   h_guess = calculate_enthalpy(T,rt,type,ice,deltaT,p);
+end
+
+while T_err > 0.0001
+ i_iter = i_iter+1;
+
+
+ % Improve the guess using a linear approximation
+ % ISSUE: the tangent approximation has a disconinuity at saturation
+ if rt>rv
+    dhdT = c.cp + (c.Lv0.^2./(c.Rv.*T.^2)).*rv;
+ else
+    dhdT = c.cp;
+ end
+ 
+ % Calculate a new temperature guess
+ T_new = T + (h - h_guess)./dhdT;
+
+ % Calculate the breakdown of water species based on the new temperature
+ [rv,~,~] = saturation_adjustment(p,T_new,rt,type,ice,deltaT);
+
+ % Calculate the enthalpy given our guess of the temperature
+ if gamma==1
+    % If using a pseudoadiabatic microphysics, remove all the liquid and solid
+    % water
+    h_guess = calculate_enthalpy(T_new,rv,type,ice,deltaT,zeros(size(rv)),zeros(size(rv)));
+ else
+    h_guess = calculate_enthalpy(T_new,rt,type,ice,deltaT,p);
+ end
+  
+ 
+ % Get the error for this guess (convert to temperature)
+ T_err= abs((h-h_guess)./c.cp);
+ 
+ T = T_new;
+
+
+ if i_iter > 10
+    disp(['iter: ' num2str(i_iter) ', error = ' num2str(T_err) ' K'])
+ end
+ 
+end
+ 
+% Calculate the water species for our estimate of the temperatures
+if gamma ==1
+    [rv,rl,ri] = saturation_adjustment(p,T,rv,type,ice,deltaT);
+else
+    [rv,rl,ri] = saturation_adjustment(p,T,rt,type,ice,deltaT);
+end
