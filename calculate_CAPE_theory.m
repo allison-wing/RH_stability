@@ -1,4 +1,4 @@
-    function [CAPE,RH,CAPE_simple] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE)
+function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE,varargin)
 %
 % Calculate the theoretical CAPE value according to the thoery of Romps (2016)
 %
@@ -12,33 +12,67 @@
 %   PE = preciptiation efficiency
 
 
-%% A couple of parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Optional inputs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Select either constant entrainment or assume epsilon/gamma = constant
+epsilon_type = 'constant';
+if nargin > 5; epsilon_type = varargin{1}; end
+
+
+%% Thermodynamic parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % For Romps (2016)
 T0 = (Tb+Tt)/2;              % temperature scale  (K)
 
-gamma = 1./4000;             % Inverse of water vapor scale height (m^-1)
-
-%% Thermodynamics %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 % Load thermodynamic constants
 c = atm.load_constants;
-
 
 % saturation specific humidity at cloud base
 qs = atm.q_sat(Tb,pb);
 
 
+%% Calculate "a" parameter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if strcmp(epsilon_type,'constant')
+
+    % This is simple, but slightly inconsistent with the original Romsp
+    % (2016) theory
+    gammab = 1./4000;             % Inverse of water vapor scale height (m^-1)
+
+else
+
+    % Following Romps (2016), we take a = epsilon*PE/gamma as constant with
+    % height. Also taking PE as constant, this implies epsilon varies with
+    % height following gamma. We assume input epsilon is the entrainment 
+    % rate at cloud base. We then need to calculate gamma at cloud base to
+    % give "a".
 
 
+    % Calculate gamma based on cloud-base temperature 
+    % (see Appendix B of Romps, 2014).
 
+    % Non-dimensional constants
+    A = c.Lv0./(c.Rd.*Tb);
+    B = c.cp.*c.Rv.*Tb.^2/c.Lv0.^2;
 
+    % Quadratic co-efficiencts
+    a1 = c.Lv0 .* ( B + qs );
+    a2 = B .* ( c.Lv0.*epsilon.*PE + c.g.*A) - c.g;
+    a3 = c.g.* ( B.*A - 1 ).*epsilon.*PE;
 
-%% Romps (2016) theory %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Quadratic formula
+    gammab = ( -a2 + ( a2.^2 - 4.*a1.*a3).^0.5 )./(2.*a1);
+
+end
+
+%disp(['water vapour scale height at cloud base is ', num2str(1./gammab) ' m'])
 
 % a is a nondimensional parameter (Eq 3 of R16)
-a = epsilon.*PE./gamma;
+a = epsilon.*PE./gammab;
+
+
+
+%% Relative humidity %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Relative humidity (Eq 4 of R16)
 RH = ( 1-PE+a )./(1+a);
