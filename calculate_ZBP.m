@@ -88,11 +88,20 @@ else
 
         % p is as we need it
         p = pl;
+
+        I = cell(1,length(Tshape));
+        I(:) = {':'};
+        pl = p(I{:},1);
        
     elseif isequal(pshape,[Nz Tshape])
 
         % p is around the wrong way, but we can fix it
         p = permute(pl,[2:length(pshape) 1]);
+
+        I = cell(1,length(Tshape));
+        I(:) = {':'};
+        pl = p(I{:},1);
+
 
 
     else

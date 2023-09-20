@@ -49,7 +49,7 @@ for i = 1:length(small_model_list) %which model
             z_ZBP = [z_LCL; prof(k,i).z(Itrop)*1000; z_LNB];
             
             % Calculate ZBP model with a given set of pressures
-            [T_ZBP,p_ZBP,z_ZBP,RH_ZBP,Tm_ZBP] = calculate_ZBP(z_ZBP,p_ZBP,T_LCL(k,i),eps_imp(k,i),PE_imp(k,i));
+            [T_ZBP,p_ZBP,z_ZBP,RH_ZBP,Tm_ZBP] = calculate_ZBP(z_ZBP,p_ZBP,T_LCL(k,i),eps_imp(k,i),PE_imp(k,i),'gamma');
                      
             %%%%%%%%%%%%%%%%
             % Plot %
@@ -65,7 +65,7 @@ for i = 1:length(small_model_list) %which model
         
         %set plot properties
         set(gca,'FontSize',18)
-        vline(0,'k--')
+        %vline(0,'k--')
         xlabel('T_{m,\rho} - T_\rho (K)')
         ylabel('Z (km)')
         title(small_model_list{i})
@@ -73,6 +73,6 @@ for i = 1:length(small_model_list) %which model
         xlim([-5 15])
         %         hline(2,'k--')
         %         hline(5,'k--')
-                gcfsavepdf(['./proftest/Fig_prof_' small_model_list{i} '.pdf'])
+                %gcfsavepdf(['./proftest/Fig_prof_' small_model_list{i} '.pdf'])
     end %exclude models with missing data
 end %model loop
