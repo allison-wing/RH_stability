@@ -88,12 +88,17 @@ else
 
         % p is as we need it
         p = pl;
+
+
+        % Put the Nz at the front
+        pl = permute(pl,[2:length(pshape) 1]);
+        pl = p(1:end-1);
        
     elseif isequal(pshape,[Nz Tshape])
 
         % p is around the wrong way, but we can fix it
         p = permute(pl,[2:length(pshape) 1]);
-
+        pl = p(1:end-1);
 
     else
            % We have an error
@@ -118,7 +123,7 @@ pl = pl(:);
 epsilon = epsilon(:);
 PE = PE(:);
    
-[~,~,~,gammal] = calculate_ZBP_lapse_rate_a(Tl,pl,epsilon.*PE,PE);
+[~,~,~,gammal] = calculate_ZBP_lapse_rate(Tl,pl,epsilon,PE);
 
 
 % Initialise temperature, moist adiabat, pressure and RH vectors
@@ -169,18 +174,20 @@ for i = 1:length(z)
 
         case 'const'
 
-                epsi = epsilon;
-                    % Get the relative humidity
-    [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate(T(:,i),p(:,i),epsi,PE);
+            epsi = epsilon;
+            % Get the relative humidity
+            [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate(T(:,i),p(:,i),epsi,PE);
+
         case 'invz'
 
-                epsi = epsilon.*1000./z(i);
-                    % Get the relative humidity
-    [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate(T(:,i),p(:,i),epsi,PE);
+            epsi = epsilon.*1000./z(i);
+            % Get the relative humidity
+            [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate(T(:,i),p(:,i),epsi,PE);
 
         case 'gamma'
-    % Get the relative humidity
-    [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate(T(:,i),p(:,i),epsi,PE);
+    
+            % Get the relative humidity and gamma
+            [~,~,RH(:,i),gamma(:,i)] = calculate_ZBP_lapse_rate_a(T(:,i),p(:,i),epsilon.*PE./gammal,PE);
 
         otherwise
             error('unknown entrainment type')

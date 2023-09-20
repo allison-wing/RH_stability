@@ -1,4 +1,4 @@
-function [CAPE,dC] = calculate_CAPE_derivatives(Tb,pb,Tt,epsilon,PE)
+function [CAPE,dC] = calculate_CAPE_derivatives(Tb,pb,Tt,epsilon,PE,varargin)
 %
 % Calculate the CAPE according to Romps (2016) analytic formula
 % and calculate its derivatives with respect to its input arguments
@@ -24,12 +24,14 @@ function [CAPE,dC] = calculate_CAPE_derivatives(Tb,pb,Tt,epsilon,PE)
 %       
 %   where the derivatives are taken while holding other variables constant.
 
+%% Optional inputs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Select either constant entrainment or assume epsilon/gamma = constant
+epsilon_type = 'constant';
+if nargin > 5; epsilon_type = varargin{1}; end
 
 %% Constants %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
- % Inverse of water vapor scale height (m^-1)
-gamma = 1./4000;            
+           
 
 % Load thermodynamic constants
 type = 'default';
@@ -82,13 +84,82 @@ dqs(2,:) = - ( 1 + (1/c.eps-1).*qs ).*qs./pb;
 % a = a(epsilon,PE)
 % a is a nondimensional parameter (Eq 3 of R16)
 
+dgamma = zeros([5,size(Tb)]);
+if strcmp(epsilon_type,'constant')
+
+    % This is simple, but slightly inconsistent with the original Romsp
+    % (2016) theory
+    gamma = 1./4000;             % Inverse of water vapor scale height (m^-1)
+
+else
+
+    % Following Romps (2016), we take a = epsilon*PE/gamma as constant with
+    % height. Also taking PE as constant, this implies epsilon varies with
+    % height following gamma. We assume input epsilon is the entrainment 
+    % rate at cloud base. We then need to calculate gamma at cloud base to
+    % give "a".
+
+
+    % Calculate gamma based on cloud-base temperature 
+    % (see Appendix B of Romps, 2014).
+
+    % Non-dimensional constants
+    A = c.Lv0./(c.Rd.*Tb);
+    B = c.cp.*c.Rv.*Tb.^2/c.Lv0.^2;
+
+    % Derivatives
+    dA = zeros([5,size(Tb)]);
+    dB = zeros([5,size(Tb)]);
+
+    dA(1,:) = -c.Lv0./(c.Rd.*Tb.^2) ;
+    dB(1,:) = 2.*c.cp.*c.Rv.*Tb/c.Lv0.^2 ;
+
+    % Quadratic co-efficiencts
+    a1 = c.Lv0 .* ( B + qs );
+    a2 = B .* ( c.Lv0.*epsilon.*PE + c.g.*A ) - c.g;
+    a3 = c.g.* ( B.*A - 1 ).*epsilon.*PE;
+
+    % Derivatives
+    da2 = zeros([5,size(Tb)]);
+    da3 = zeros([5,size(Tb)]);
+
+    da1 = c.Lv0 .* ( dB + dqs );
+    for i = 1:5
+       da2(i,:) = dB(i,:) .* ( c.Lv0.*epsilon.*PE + c.g.*A ) + B.*c.g.*dA(i,:);
+       da3(i,:) = c.g.* ( dB(i,:).*A ).*epsilon.*PE + c.g.* ( B.*dA(i,:) ).*epsilon.*PE;
+    end
+    da2(4,:) = da2(4,:) + B.*c.Lv0.*PE;
+    da2(5,:) = da2(5,:) + B.*c.Lv0.*epsilon;
+
+    
+    da3(4,:) = da3(4,:) + c.g.* ( B.*A - 1 ).*PE;
+    da3(5,:) = da3(5,:) + c.g.* ( B.*A - 1 ).*epsilon;
+
+    % Quadratic formula
+    gamma = ( -a2 + ( a2.^2 - 4.*a1.*a3).^0.5 )./(2.*a1);
+
+
+    % Derivatives
+    dgamma_da1 = -0.5.*(a2.^2-4.*a1.*a3).^-0.5.*4.*a3./(2.*a1) - ( -a2 + ( a2.^2 - 4.*a1.*a3).^0.5 )./(2.*a1.^2);
+    dgamma_da2 = ( -1 +(a2.^2-4.*a1.*a3).^-0.5.*a2 )./(2.*a1);
+    dgamma_da3 = -( (a2.^2-4.*a1.*a3).^-0.5.*a1 )./(a1);
+
+    for i = 1:5 
+       dgamma(i,:) = dgamma_da1.*da1(i,:) + dgamma_da2.*da2(i,:) + dgamma_da3.*da3(i,:);
+    end
+end
+
+
 % Calculate the value
 a = epsilon.*PE./gamma;
 
 % Derivatives of a
 da = zeros([5,size(Tb)]);
-da(4,:) = PE./gamma;
-da(5,:) = epsilon./gamma;
+for i = 1:5 
+   da(i,:) = - epsilon.*PE./gamma.^2 .* dgamma(i,:);
+end
+da(4,:) = da(4,:) + PE./gamma;
+da(5,:) = da(5,:) + epsilon./gamma;
 
 
 %% Parameter f 
