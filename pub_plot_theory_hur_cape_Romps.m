@@ -168,6 +168,9 @@ for i = 1:length(small_model_list)
         T1_295(i) = NaN;  T1_300(i) = NaN; T1_305(i) = NaN;
         p1_295(i) = NaN; p1_300(i) = NaN; p1_305(i) = NaN;
         hur295small_avg(i) = NaN; hur300small_avg(i) = NaN; hur305small_avg(i) = NaN;
+        prof295small(i).gamma = NaN; prof300small(i).gamma = NaN; prof305small(i).gamma = NaN;
+        prof295small(i).qs = NaN; prof300small(i).qs = NaN; prof305small(i).qs = NaN;
+        gammaLCL295(i) = NaN;  gammaLCL300(i) = NaN; gammaLCL305(i) = NaN;
         
     else
         %convert from specific humidity to mixing ratio
@@ -184,6 +187,11 @@ for i = 1:length(small_model_list)
         prof295small(i).rho = prof295small(i).p*100./(c.Rd*prof295small(i).ta);
         prof300small(i).rho = prof300small(i).p*100./(c.Rd*prof300small(i).ta);
         prof305small(i).rho = prof305small(i).p*100./(c.Rd*prof305small(i).ta);
+        
+        %calculate saturation specific humidity
+        prof295small(i).qs = atm.q_sat(prof295small(i).ta,prof295small(i).p*100);
+        prof300small(i).qs = atm.q_sat(prof300small(i).ta,prof300small(i).p*100);
+        prof305small(i).qs = atm.q_sat(prof305small(i).ta,prof305small(i).p*100);
         
         %%%%%%%%%%%%%%%%%
         %295%%%%%%%%%%%%%
@@ -213,11 +221,22 @@ for i = 1:length(small_model_list)
         %Calculate LCL 
         [T_LCL295(i),p_LCL295(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
         
+        %Calculate gamma at LCL
+        nz = length(prof295small(i).z);
+        clear dqsdz
+        prof295small(i).qs = smooth(prof295small(i).qs,5); % smooth before taking derivative
+        dqsdz(1) = (prof295small(i).qs(2) - prof295small(i).qs(1))/(prof295small(i).z(2) - prof295small(i).z(1)); %forward difference
+        dqsdz(2:nz-1) = (prof295small(i).qs(3:nz) - prof295small(i).qs(1:nz-2))./(prof295small(i).z(3:nz) - prof295small(i).z(1:nz-2)); %centered difference
+        dqsdz(nz) = (prof295small(i).qs(nz) - prof295small(i).qs(nz-1))/(prof295small(i).z(nz) - prof295small(i).z(nz-1)); %backward difference
+        prof295small(i).gamma = -1*dqsdz'./prof295small(i).qs; %km^-1
+        prof295small(i).gamma = prof295small(i).gamma/1000; %m^-1
+        gammaLCL295(i) = interp1(prof295small(i).p*100,prof295small(i).gamma,p_LCL295(i));
+        
         %Calcluate CAPE & LNB 
         [cape295small(i),p_LNB295(i),Tv_LNB295(i),T_LNB295(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof295small(i).tv,prof295small(i).p*100,prof295small(i).ta,prof295small(i).z*1000);
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
-        [PE_R16,epsilon_R16,RH_R16_295,CAPE_R16_295] = fn_plot_CAPE_and_RH_RCE(0,T_LCL295(i),p_LCL295(i),T_LNB295(i));
+        [PE_R16,epsilon_R16,RH_R16_295,CAPE_R16_295] = fn_plot_CAPE_and_RH_RCE(0,T_LCL295(i),p_LCL295(i),T_LNB295(i),gammaLCL295(i));
 %         [PE_R16,epsilon_R16,RH_R16_295,CAPE_R16_295] = fn_plot_CAPE_and_RH_RCE(0,285.72,93297.51,198.98); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
@@ -252,11 +271,22 @@ for i = 1:length(small_model_list)
         %Calculate LCL 
         [T_LCL300(i),p_LCL300(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
         
+        %Calculate gamma at LCL
+        nz = length(prof300small(i).z);
+        clear dqsdz
+        prof300small(i).qs = smooth(prof300small(i).qs,5); % smooth before taking deri
+        dqsdz(1) = (prof300small(i).qs(2) - prof300small(i).qs(1))/(prof300small(i).z(2) - prof300small(i).z(1)); %forward difference
+        dqsdz(2:nz-1) = (prof300small(i).qs(3:nz) - prof300small(i).qs(1:nz-2))./(prof300small(i).z(3:nz) - prof300small(i).z(1:nz-2)); %centered difference
+        dqsdz(nz) = (prof300small(i).qs(nz) - prof300small(i).qs(nz-1))/(prof300small(i).z(nz) - prof300small(i).z(nz-1)); %backward difference
+        prof300small(i).gamma = -1*dqsdz'./prof300small(i).qs; %km^-1
+        prof300small(i).gamma = prof300small(i).gamma/1000; %m^-1
+        gammaLCL300(i) = interp1(prof300small(i).p*100,prof300small(i).gamma,p_LCL300(i));
+        
         %Calcluate CAPE & LNB 
         [cape300small(i),p_LNB300(i),Tv_LNB300(i),T_LNB300(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof300small(i).tv,prof300small(i).p*100,prof300small(i).ta,prof300small(i).z*1000);
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
-        [PE_R16,epsilon_R16,RH_R16_300,CAPE_R16_300] = fn_plot_CAPE_and_RH_RCE(0,T_LCL300(i),p_LCL300(i),T_LNB300(i));
+        [PE_R16,epsilon_R16,RH_R16_300,CAPE_R16_300] = fn_plot_CAPE_and_RH_RCE(0,T_LCL300(i),p_LCL300(i),T_LNB300(i),gammaLCL300(i));
 %         [PE_R16,epsilon_R16,RH_R16_300,CAPE_R16_300] = fn_plot_CAPE_and_RH_RCE(0,291.14,93953.86,198.11); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
@@ -291,11 +321,22 @@ for i = 1:length(small_model_list)
         %Calculate LCL 
         [T_LCL305(i),p_LCL305(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
         
+        %Calculate gamma at LCL
+        nz = length(prof305small(i).z);
+        clear dqsdz
+        prof305small(i).qs = smooth(prof305small(i).qs,5); % smooth before taking deri
+        dqsdz(1) = (prof305small(i).qs(2) - prof305small(i).qs(1))/(prof305small(i).z(2) - prof305small(i).z(1)); %forward difference
+        dqsdz(2:nz-1) = (prof305small(i).qs(3:nz) - prof305small(i).qs(1:nz-2))./(prof305small(i).z(3:nz) - prof305small(i).z(1:nz-2)); %centered difference
+        dqsdz(nz) = (prof305small(i).qs(nz) - prof305small(i).qs(nz-1))/(prof305small(i).z(nz) - prof305small(i).z(nz-1)); %backward difference       
+        prof305small(i).gamma = -1*dqsdz'./prof305small(i).qs; %km^-1
+        prof305small(i).gamma = prof305small(i).gamma/1000; %m^-1
+        gammaLCL305(i) = interp1(prof305small(i).p*100,prof305small(i).gamma,p_LCL305(i));
+        
         %Calcluate CAPE & LNB 
         [cape305small(i),p_LNB305(i),Tv_LNB305(i),T_LNB305(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof305small(i).tv,prof305small(i).p*100,prof305small(i).ta,prof305small(i).z*1000);
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
-        [PE_R16,epsilon_R16,RH_R16_305,CAPE_R16_305] = fn_plot_CAPE_and_RH_RCE(0,T_LCL305(i),p_LCL305(i),T_LNB305(i));
+        [PE_R16,epsilon_R16,RH_R16_305,CAPE_R16_305] = fn_plot_CAPE_and_RH_RCE(0,T_LCL305(i),p_LCL305(i),T_LNB305(i),gammaLCL305(i));
 %         [PE_R16,epsilon_R16,RH_R16_305,CAPE_R16_305] = fn_plot_CAPE_and_RH_RCE(0,296.63,94461.73,199.93); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
@@ -312,22 +353,22 @@ toc;
 for i = 1:length(small_model_list)
     
     %%295%%
-    [CAPE_theory295(i),RH_theory295(i)] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),eps_imp295small(i),PE_imp295small(i));
-    [CAPE_theory295_vary_depth(i),RH_theory295_vary_depth(i)] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),nanmean(eps_imp295small),nanmean(PE_imp295small));
-    [CAPE_theory295_vary_PE(i),RH_theory295_vary_PE(i)] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),nanmean(eps_imp295small),PE_imp295small(i));
-    [CAPE_theory295_vary_eps(i),RH_theory295_vary_eps(i)] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),eps_imp295small(i),nanmean(PE_imp295small));
+    [CAPE_theory295(i),RH_theory295(i),gammab] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),eps_imp295small(i),PE_imp295small(i),gammaLCL295(i),'gamma');
+    [CAPE_theory295_vary_depth(i),RH_theory295_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),nanmean(eps_imp295small),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295_vary_PE(i),RH_theory295_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),nanmean(eps_imp295small),PE_imp295small(i),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295_vary_eps(i),RH_theory295_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),eps_imp295small(i),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
     
     %%300%%
-    [CAPE_theory300(i),RH_theory300(i)] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),eps_imp300small(i),PE_imp300small(i));
-    [CAPE_theory300_vary_depth(i),RH_theory300_vary_depth(i)] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),nanmean(eps_imp300small),nanmean(PE_imp300small));
-    [CAPE_theory300_vary_PE(i),RH_theory300_vary_PE(i)] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),nanmean(eps_imp300small),PE_imp300small(i));
-    [CAPE_theory300_vary_eps(i),RH_theory300_vary_eps(i)] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),eps_imp300small(i),nanmean(PE_imp300small));
+    [CAPE_theory300(i),RH_theory300(i),gammab] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),eps_imp300small(i),PE_imp300small(i),gammaLCL300(i),'gamma');
+    [CAPE_theory300_vary_depth(i),RH_theory300_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),nanmean(eps_imp300small),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300_vary_PE(i),RH_theory300_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),nanmean(eps_imp300small),PE_imp300small(i),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300_vary_eps(i),RH_theory300_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),eps_imp300small(i),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
     
     %%305%%
-    [CAPE_theory305(i),RH_theory305(i)] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),eps_imp305small(i),PE_imp305small(i));
-    [CAPE_theory305_vary_depth(i),RH_theory305_vary_depth(i)] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),nanmean(eps_imp305small),nanmean(PE_imp305small));
-    [CAPE_theory305_vary_PE(i),RH_theory305_vary_PE(i)] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),nanmean(eps_imp305small),PE_imp305small(i));
-    [CAPE_theory305_vary_eps(i),RH_theory305_vary_eps(i)] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),eps_imp305small(i),nanmean(PE_imp305small));
+    [CAPE_theory305(i),RH_theory305(i),gammab] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),eps_imp305small(i),PE_imp305small(i),gammaLCL305(i),'gamma');
+    [CAPE_theory305_vary_depth(i),RH_theory305_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),nanmean(eps_imp305small),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305_vary_PE(i),RH_theory305_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),nanmean(eps_imp305small),PE_imp305small(i),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305_vary_eps(i),RH_theory305_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),eps_imp305small(i),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
     
     
 end
@@ -338,7 +379,8 @@ save(['RH_stab_' num2str(z1) '-' num2str(z2) '.mat'],'small_model_list', 'small_
     'prof295small', 'prof300small','prof305small','hur295small_avg', 'hur300small_avg', 'hur305small_avg', ...
     'cape295small', 'cape300small', 'cape305small',...
     'PE_imp295small', 'PE_imp300small', 'PE_imp305small', 'eps_imp295small', 'eps_imp300small', 'eps_imp305small', ...
-    'T_LCL295','T_LCL300','T_LCL305','p_LCL295','p_LCL300','p_LCL305','Tv_LNB295','Tv_LNB300','Tv_LNB305','T_LNB295','T_LNB300','T_LNB305','p_LNB295','p_LNB300','p_LNB305')
+    'T_LCL295','T_LCL300','T_LCL305','p_LCL295','p_LCL300','p_LCL305','Tv_LNB295','Tv_LNB300','Tv_LNB305','T_LNB295','T_LNB300','T_LNB305','p_LNB295','p_LNB300','p_LNB305',...
+    'gammaLCL295','gammaLCL300','gammaLCL305')
 
 
 %%%
@@ -354,7 +396,7 @@ figure('Position',[100 100 1000 400])
 % Panel 1: Param Models, CAPE vs. RH on top of theory, colored by PE proxy
 %plot theory
 subplot(1,2,1)
-fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iPAR)),nanmean(p_LCL300(iPAR)),nanmean(T_LNB305(iPAR)));
+fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iPAR)),nanmean(p_LCL300(iPAR)),nanmean(T_LNB300(iPAR)),nanmean(gammaLCL300(iPAR)));
 
 cape_param = cape300small(iPAR);
 hur_param = hur300small_avg(iPAR);
@@ -380,7 +422,7 @@ xlim([0.3 1])
 % Panel 2: Explicit Models, CAPE vs. RH on top of theory, colored by PE proxy
 %plot theory
 subplot(1,2,2)
-fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB305(iEXP)));
+fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB300(iEXP)),nanmean(gammaLCL300(iEXP)));
 
 cape_expl = cape300small(iEXP);
 hur_expl = hur300small_avg(iEXP);
@@ -412,7 +454,7 @@ gcfsavepdf(['Fig05-theory-hur-cape' num2str(z1) '-' num2str(z2) '-scatter-small3
 
 figure('Position',[100 100 650 400])
 % subplot(3,1,3)
-fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB305(iEXP)));
+fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB300(iEXP)),nanmean(gammaLCL300(iEXP)));
 
 hold on
 

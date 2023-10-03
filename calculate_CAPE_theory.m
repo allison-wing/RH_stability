@@ -1,4 +1,4 @@
-function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE,varargin)
+function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE,gammaLCL,varargin)
 %
 % Calculate the theoretical CAPE value according to the thoery of Romps (2016)
 %
@@ -10,13 +10,14 @@ function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,P
 %
 %   epsilon = entrainment rate (m^-1)
 %   PE = preciptiation efficiency
+%   gammaLCL = gamma at the LCL (m^-1)
 
 
 %% Optional inputs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Select either constant entrainment or assume epsilon/gamma = constant
 epsilon_type = 'constant';
-if nargin > 5; epsilon_type = varargin{1}; end
+if nargin > 6; epsilon_type = varargin{1}; end
 
 
 %% Thermodynamic parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,17 +52,19 @@ else
     % Calculate gamma based on cloud-base temperature 
     % (see Appendix B of Romps, 2014).
 
-    % Non-dimensional constants
-    A = c.Lv0./(c.Rd.*Tb);
-    B = c.cp.*c.Rv.*Tb.^2/c.Lv0.^2;
-
-    % Quadratic co-efficiencts
-    a1 = c.Lv0 .* ( B + qs );
-    a2 = B .* ( c.Lv0.*epsilon.*PE + c.g.*A) - c.g;
-    a3 = c.g.* ( B.*A - 1 ).*epsilon.*PE;
-
-    % Quadratic formula
-    gammab = ( -a2 + ( a2.^2 - 4.*a1.*a3).^0.5 )./(2.*a1);
+%     % Non-dimensional constants
+%     A = c.Lv0./(c.Rd.*Tb);
+%     B = c.cp.*c.Rv.*Tb.^2/c.Lv0.^2;
+% 
+%     % Quadratic co-efficiencts
+%     a1 = c.Lv0 .* ( B + qs );
+%     a2 = B .* ( c.Lv0.*epsilon.*PE + c.g.*A) - c.g;
+%     a3 = c.g.* ( B.*A - 1 ).*epsilon.*PE;
+% 
+%     % Quadratic formula
+%     gammab = ( -a2 + ( a2.^2 - 4.*a1.*a3).^0.5 )./(2.*a1);
+    
+    gammab = gammaLCL;
 
 end
 

@@ -1,4 +1,4 @@
-function [PE_vec,ent_vec,RH_mat,CAPE_mat] = fn_plot_CAPE_and_RH_RCE(doplot,Tb,pb,Tt)
+function [PE_vec,ent_vec,RH_mat,CAPE_mat,gammab] = fn_plot_CAPE_and_RH_RCE(doplot,Tb,pb,Tt,gammaLCL)
 
 %
 % Calculate CAPE as a function of RH for the zero-buoyancy plume model
@@ -10,6 +10,7 @@ function [PE_vec,ent_vec,RH_mat,CAPE_mat] = fn_plot_CAPE_and_RH_RCE(doplot,Tb,pb
 % Tb = Cloud base temperature (K)
 % pb = Cloud base pressure (pa)
 % Tt = Temperature of top of convecting layer (K)
+%   gammaLCL = gamma at the LCL (m^-1)
 
 
 %% Input parameters
@@ -40,7 +41,7 @@ PE_vec = [0:0.01:1];
 [ent_mat,PE_mat] = meshgrid(ent_vec,PE_vec);
 
 %% Calculate CAPE according to the analytic theory of Romps (2016)
-[CAPE_mat,RH_mat,CAPE_simple_mat] = calculate_CAPE_theory(Tb,Tt,pb,ent_mat,PE_mat);
+[CAPE_mat,RH_mat,CAPE_simple_mat,gammab] = calculate_CAPE_theory(Tb,Tt,pb,ent_mat,PE_mat,gammaLCL,'gamma');
 
 
 %% Plot figure showing CAPE vs RH for R16 solution
