@@ -1,0 +1,34 @@
+function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE,varargin)
+%
+% Calculate the theoretical CAPE value according to the thoery of Romps (2016)
+%
+% Inputs are:
+%
+%   Tb = cloud-base temperature
+%   pb = cloud-base pressure
+%   Tt = temperature of level of neutral buoyancy
+%
+%   epsilon = entrainment rate (m^-1)
+%   PE = preciptiation efficiency
+
+c = atm.load_constants;
+
+%% Calculate the zero-buoyancy plume solution for constant entrainment
+
+[T,p,z,RH,Tm,gamma] = calculate_ZBP([500 20000],pb,Tb,epsilon,PE,'const');
+
+% Assume dz is constant for now 
+dz = z(2)-z(1);
+
+I_top = T>Tt;
+Tm(~Itop) = T;
+
+%% Calculate CAPE
+CAPE = sum(c.g.Tm(1:I_top)-T(1:I_top));
+
+%% Calculate relative humidity
+I = z>=2000 & z<5000;
+rho = p./(c.Rd.*T);
+RH = trapz(z(I),rho(I).*RH(I))
+
+

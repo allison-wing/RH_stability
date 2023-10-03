@@ -107,19 +107,8 @@ print -dpdf ../Figures/CAPE_derivatives_gamma.pdf
 
 %% Test derivative with respect to gamma
 gamma = 1./(2000:4000);
-[CAPE,dC] = calculate_CAPE_derivatives_with_gamma(Tb0.*ones(size(gamma)),pb0.*ones(size(gamma)),Tt0.*ones(size(gamma)),epsilon0.*ones(size(gamma)),PE0.*ones(size(gamma)),gamma);
+[CAPE,dC] = calculate_CAPE_derivatives_with_gamma(Tb0.*ones(size(PE)),pb0.*ones(size(PE)),Tt0.*ones(size(PE)),epsilon0.*ones(size(PE)),PE,ent_type);
+.gamma)
 
-
-% Numerically estimate dCAPE/dTb
-dCAPE_numerical = gradient(CAPE,gamma);
-
-figure
-plot(1./gamma,dC(6,:)./CAPE)
-hold on
-plot(1./gamma,dCAPE_numerical./CAPE,'--')
-
-xlabel('1/gamma (m)')
-ylabel('% CAPE increase with gamma (% m)')
-box off
 
 

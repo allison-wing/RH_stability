@@ -72,6 +72,12 @@ print -dpdf ../Figures/phase_space_constant_a.pdf
 
 %% Now calculate the ZBP model with height for both varying and constant entrainment
 
+% Set the lower and uppre level
+Tb = 295;
+Tt = 220;
+pb = 95000;
+
+
 z = [500 15000];
 epsilon = 0.5e-3;
 PE = 0.3;
@@ -88,7 +94,7 @@ fig.bfig(25,15)
 subplot(131)
 plot(T,z./1000)
 hold on
-plot(Tv,zv./1000)
+plot(Tv,z./1000)
 plot(Tm,z./1000)
 l = legend('\epsilon = const','\epsilon \propto gamma','undilute');
 set(l,'box','off')
@@ -112,6 +118,33 @@ xlabel('entrainment rate (km^{-1})')
 
 print -dpdf ../Figures/profiles_constant_a.pdf
 
+
+
+%% Now calculate the ZBP model with height for both varying and constant entrainment
+
+% Set the lower and uppre level
+Tb_mat = [290:305];
+Tt = 220;
+pb = 95000;
+
+for i = 1:length(Tb_mat)
+
+    Tb = Tb_mat(i)
+    z = [500 15000];
+    
+    epsilon = 0.5e-3;
+    PE = 0.3;
+    [Tm,pv,z,RHv,~,gammam] = calculate_ZBP(z,pb,Tb,0,PE,'const');
+    [Tmv,pv,z,RHv,~,gammamv] = calculate_ZBP(z,pb,Tb,0,PE,'gamma');
+    [T,p,z,RH,Tm,gamma] = calculate_ZBP(z,pb,Tb,epsilon,PE,'const');
+    [Tv,pv,z,RHv,Tmv,gammav] = calculate_ZBP(z,pb,Tb,epsilon,PE,'gamma');
+
+
+    I = z<5000;
+    eps_profile = epsilon.*gammav./gammav(1);
+    epsilon_5(i) = mean(eps_profile(I));
+
+end
 
 
 
