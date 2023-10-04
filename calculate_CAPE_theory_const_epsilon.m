@@ -20,16 +20,21 @@ c = atm.load_constants;
 % Assume dz is constant for now 
 dz = z(2)-z(1);
 
-Istrat = T<Tt;
+Istrat = false(size(T));
+
+% This is a super annoying loop
+for i = 1:size(T,1)
+   Istrat(i,:) = squeeze(T(i,:))'<Tt(:);
+end
 Tm(Istrat) = T(Istrat);
 
 %% Calculate CAPE using a simple sum
-CAPE = sum( c.g.*(Tm-T)./T .*dz );
+CAPE = squeeze(sum( c.g.*(Tm-T)./T .*dz ));
 
 %% Calculate relative humidity
 rho = p./(c.Rd.*T);
 rho(z<2000 | z>5000) = 0;
-RH = sum(rho.*RH.*dz)./sum(rho.*dz);
+RH = squeeze(sum(rho.*RH.*dz)./sum(rho.*dz));
 
 
 
