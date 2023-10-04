@@ -1,4 +1,4 @@
-function [CAPE,RH,CAPE_simple,gammab] = calculate_CAPE_theory(Tb,Tt,pb,epsilon,PE,varargin)
+function [CAPE,RH] = calculate_CAPE_theory_const_epsilon(Tb,Tt,pb,epsilon,PE)
 %
 % Calculate the theoretical CAPE value according to the thoery of Romps (2016)
 %
@@ -20,15 +20,17 @@ c = atm.load_constants;
 % Assume dz is constant for now 
 dz = z(2)-z(1);
 
-I_top = T>Tt;
-Tm(~Itop) = T;
+Istrat = zeros(size(T));
+Istrat(i,:) = T(i,:)<Tt(:);
+Tm(Istrat) = T(Istrat);
 
-%% Calculate CAPE
-CAPE = sum(c.g.Tm(1:I_top)-T(1:I_top));
+%% Calculate CAPE using a simple sum
+CAPE = sum( c.g.*(Tm-T)./T .*dz );
 
 %% Calculate relative humidity
-I = z>=2000 & z<5000;
 rho = p./(c.Rd.*T);
-RH = trapz(z(I),rho(I).*RH(I))
+rho(z<2000 | z>5000) = 0;
+RH = sum(rho.*RH.*dz)./sum(rho.*dz);
+
 
 
