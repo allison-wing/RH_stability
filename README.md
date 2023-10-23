@@ -9,7 +9,7 @@ Includes...
 - pub_plot_dcape_decompose.m: Figure 9 and S6
 - pub_plot_prof_ta_moistadiabat_RH.m: Figure 1
 - pub_plot_profiles_ZBP.m: Figures S1-S4
-- pub_plot_theory_hur_cape_Romps.m Figures 5-8
+- pub_plot_theory_hur_cape_Romps.m Figures 5-8 and S5
 
 ## Functions
 - matlab_packages: A subset of needed codes from Martin Singh's matlab packages (https://gitlab.com/martinsingh/matlab_packages)
