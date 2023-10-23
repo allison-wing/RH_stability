@@ -16,10 +16,11 @@ Includes...
 - calc_PEproxy.m
 - calc_precipwaterpath.m
 - calculate_CAPE.m
-- calculate_CAPE_derivatives.m
+- calculate_CAPE_derivatives_with_gamma.m
 - calculate_CAPE_theory.m
 - calculate_ZBP.m
 - calculate_ZBP_lapse_rate.m
+- calculate_ZBP_lapse_rate_a.m
 - find_PE_epsilon.m
 - fn_plot_CAPE_and_RCE_RCE.m
 
