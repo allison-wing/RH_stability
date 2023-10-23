@@ -18,6 +18,7 @@ function [Gamma,Gamma_m,RH,gamma] = calculate_ZBP_lapse_rate(T,p,epsilon,PE)
 %    Gamma = -dT/dz (K/m)
 %    Gamma_m = moist adiabatic lapse rate (K/m)
 %    RH = relative humidity (0-1)
+%    gamma = inverse water vapor scale height (1/m)
 %
 % Requires the +atm package of thermodynamic functions
 %

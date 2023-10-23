@@ -56,6 +56,9 @@ filebase = '_cfv0-profiles.nc';
 
 SSTs = [295 300 305];
 
+% Load thermodynamic constants
+c = atm.load_constants;
+
 
 %% Read in small profiles
 for i = 1:length(small_model_list)
@@ -167,10 +170,10 @@ for i = 1:length(small_model_list)
         rvinit = prof295small(i).rv(1);
         pinit = prof295small(i).p(1);
         
-        %Calcluate CAPE 
+        %Calcluate CAPE
         [cape295small(i),p_LNB295(i),Tv_LNB295(i),T_LNB295(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof295small(i).tv,prof295small(i).p*100,prof295small(i).ta,prof295small(i).z*1000);
         
-       
+        
         %%%%%%%%%%%%%%%%%
         %300%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%
@@ -179,7 +182,7 @@ for i = 1:length(small_model_list)
         rvinit = prof300small(i).rv(1);
         pinit = prof300small(i).p(1);
         
-        %Calcluate CAPE 
+        %Calcluate CAPE
         [cape300small(i),p_LNB300(i),Tv_LNB300(i),T_LNB300(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof300small(i).tv,prof300small(i).p*100,prof300small(i).ta,prof300small(i).z*1000);
         
         %%%%%%%%%%%%%%%%%
@@ -202,7 +205,7 @@ end
 cape305small(strcmp(small_model_list,'DALES')==1)=NaN;
 cape305small(strcmp(small_model_list,'DALES-damping')==1)=NaN;
 
-%% 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PLOT %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,11 +264,8 @@ legend('location','northwest')
 %%%%%%%%%%%%%%
 %PANEL 2 Histogram of CAPE change with warming
 clear xparam Nparam xCRM NCRM xVER NVER xLES NLES
-%compute CC scaling as dqsat(SST)
-qs295 = atm.q_sat(295,1014.8*100);
-qs300 = atm.q_sat(300,1014.8*100);
-qs305 = atm.q_sat(305,1014.8*100);
-CCscale = (100/10)*(qs305-qs295)/qs300;
+%compute CC scaling as 100*1/es des/dT = 100*L/(RvT^2) ==> %/K where T = SST
+CCscale = 100*c.Lv0/(c.Rv*300^2);
 
 %parameterized models
 dCAPE_param = (100/10)*(cape305small(iPAR)-cape295small(iPAR))./cape300small(iPAR); % percent/K over 10K range

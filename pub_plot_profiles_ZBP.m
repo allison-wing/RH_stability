@@ -12,11 +12,9 @@ T_LCL = cat(1,T_LCL295,T_LCL300,T_LCL305);
 p_LCL = cat(1,p_LCL295,p_LCL300,p_LCL305);
 T_LNB = cat(1,T_LNB295,T_LNB300,T_LNB305);
 p_LNB = cat(1,p_LNB295,p_LNB300,p_LNB305);
+gammaLCL = cat(1,gammaLCL295,gammaLCL300,gammaLCL305);
 
 c = atm.load_constants;
-gamma = 0; %reversible adiabat
-deltaT = 40;
-ice = 1;
 
 SSTs = [295 300 305];
 lw = [1 2 3];
@@ -49,7 +47,7 @@ for i = 1:length(small_model_list) %which model
             z_ZBP = [z_LCL; prof(k,i).z(Itrop)*1000; z_LNB];
             
             % Calculate ZBP model with a given set of pressures
-            [T_ZBP,p_ZBP,z_ZBP,RH_ZBP,Tm_ZBP] = calculate_ZBP(z_ZBP,p_ZBP,T_LCL(k,i),eps_imp(k,i),PE_imp(k,i),'gamma');
+            [T_ZBP,p_ZBP,z_ZBP,RH_ZBP,Tm_ZBP,gamma] = calculate_ZBP(z_ZBP,p_ZBP,T_LCL(k,i),eps_imp(k,i),PE_imp(k,i),gammaLCL(k,i),'gamma');
                      
             %%%%%%%%%%%%%%%%
             % Plot %
@@ -73,6 +71,6 @@ for i = 1:length(small_model_list) %which model
         xlim([-5 15])
         %         hline(2,'k--')
         %         hline(5,'k--')
-                %gcfsavepdf(['./proftest/Fig_prof_' small_model_list{i} '.pdf'])
+                gcfsavepdf(['./proftest/Fig_prof_' small_model_list{i} '.pdf'])
     end %exclude models with missing data
 end %model loop

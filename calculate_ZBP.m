@@ -1,4 +1,4 @@
-function [T,p,z,RH,Tm,gamma] = calculate_ZBP(z,pl,Tl,epsilon,PE,varargin)
+function [T,p,z,RH,Tm,gamma] = calculate_ZBP(z,pl,Tl,epsilon,PE,gammal,varargin)
 %
 % Calculate the temperature and relative humidity profiles
 % between two levels zl and zm in the lower troposphere
@@ -17,6 +17,7 @@ function [T,p,z,RH,Tm,gamma] = calculate_ZBP(z,pl,Tl,epsilon,PE,varargin)
 %
 %    p       = pressure (Pa) of lower level (size = Tsize)
 %              pressure (Pa) at each level  (size = [Tsize Nz])
+%    gammal  = inverse water vapor scale height at LCL (m^-1)
 %
 %
 % Outputs:
@@ -126,8 +127,9 @@ Tl = Tl(:);
 pl = pl(:);
 epsilon = epsilon(:);
 PE = PE(:);
+gammal = gammal(:);
    
-[~,~,~,gammal] = calculate_ZBP_lapse_rate(Tl,pl,epsilon,PE);
+%[~,~,~,gammal] = calculate_ZBP_lapse_rate(Tl,pl,epsilon,PE);
 
 
 % Initialise temperature, moist adiabat, pressure and RH vectors

@@ -2,6 +2,7 @@
 %model to calculate theoretical CAPE, and does so holding different things
 %vary or varying across models to explain the intermodel spread
 %LIFT FROM LOWEST MODEL LEVEL
+%uses simulated gamma at LCL as an input to the Romps model (to diagnose a). Diagnosed epsilon then represents epsilon at LCL.
 
 clear all
 
@@ -174,24 +175,24 @@ for i = 1:length(small_model_list)
         
     else
         %convert from specific humidity to mixing ratio
-        prof295small(i).rv = prof295small(i).hus/1000./(1-prof295small(i).hus/1000);
-        prof300small(i).rv = prof300small(i).hus/1000./(1-prof300small(i).hus/1000);
-        prof305small(i).rv = prof305small(i).hus/1000./(1-prof305small(i).hus/1000);
+        prof295small(i).rv = prof295small(i).hus/1000./(1-prof295small(i).hus/1000); %g/g
+        prof300small(i).rv = prof300small(i).hus/1000./(1-prof300small(i).hus/1000); %g/g
+        prof305small(i).rv = prof305small(i).hus/1000./(1-prof305small(i).hus/1000); %g/g
         
         %compute virtual temperature
-        prof295small(i).tv = prof295small(i).ta.*(1+prof295small(i).rv/.622)./(1+prof295small(i).rv); %virtual temperature
-        prof300small(i).tv = prof300small(i).ta.*(1+prof300small(i).rv/.622)./(1+prof300small(i).rv); %virtual temperature
-        prof305small(i).tv = prof305small(i).ta.*(1+prof305small(i).rv/.622)./(1+prof305small(i).rv); %virtual temperature
+        prof295small(i).tv = prof295small(i).ta.*(1+prof295small(i).rv/.622)./(1+prof295small(i).rv); %virtual temperature, K
+        prof300small(i).tv = prof300small(i).ta.*(1+prof300small(i).rv/.622)./(1+prof300small(i).rv); %virtual temperature, K
+        prof305small(i).tv = prof305small(i).ta.*(1+prof305small(i).rv/.622)./(1+prof305small(i).rv); %virtual temperature, K
         
         %compute density
-        prof295small(i).rho = prof295small(i).p*100./(c.Rd*prof295small(i).ta);
-        prof300small(i).rho = prof300small(i).p*100./(c.Rd*prof300small(i).ta);
-        prof305small(i).rho = prof305small(i).p*100./(c.Rd*prof305small(i).ta);
+        prof295small(i).rho = prof295small(i).p*100./(c.Rd*prof295small(i).ta); %kg/m^3
+        prof300small(i).rho = prof300small(i).p*100./(c.Rd*prof300small(i).ta); %kg/m^3
+        prof305small(i).rho = prof305small(i).p*100./(c.Rd*prof305small(i).ta); %kg/m^3
         
         %calculate saturation specific humidity
-        prof295small(i).qs = atm.q_sat(prof295small(i).ta,prof295small(i).p*100);
-        prof300small(i).qs = atm.q_sat(prof300small(i).ta,prof300small(i).p*100);
-        prof305small(i).qs = atm.q_sat(prof305small(i).ta,prof305small(i).p*100);
+        prof295small(i).qs = atm.q_sat(prof295small(i).ta,prof295small(i).p*100); %g/g
+        prof300small(i).qs = atm.q_sat(prof300small(i).ta,prof300small(i).p*100); %g/g
+        prof305small(i).qs = atm.q_sat(prof305small(i).ta,prof305small(i).p*100); %g/g
         
         %%%%%%%%%%%%%%%%%
         %295%%%%%%%%%%%%%
@@ -214,12 +215,12 @@ for i = 1:length(small_model_list)
         hur295small_avg(i) = sum(prof295small(i).hur.*prof295small(i).rho.* ILT.*dz)./sum(prof295small(i).rho.* ILT.*dz);
         
         %Lift from lowest model level
-        Tinit = prof295small(i).ta(1);
-        rvinit = prof295small(i).rv(1);
-        pinit = prof295small(i).p(1);
+        Tinit = prof295small(i).ta(1); %K
+        rvinit = prof295small(i).rv(1); %g/g
+        pinit = prof295small(i).p(1); %hPa
         
         %Calculate LCL 
-        [T_LCL295(i),p_LCL295(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
+        [T_LCL295(i),p_LCL295(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100); %T_LCL in K, p_LCL in Pa
         
         %Calculate gamma at LCL
         nz = length(prof295small(i).z);
@@ -234,10 +235,10 @@ for i = 1:length(small_model_list)
         
         %Calcluate CAPE & LNB 
         [cape295small(i),p_LNB295(i),Tv_LNB295(i),T_LNB295(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof295small(i).tv,prof295small(i).p*100,prof295small(i).ta,prof295small(i).z*1000);
+        %CAPE in J/kg, p_LNB in Pa, Tv_LNB in K, T_LNB in K
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
         [PE_R16,epsilon_R16,RH_R16_295,CAPE_R16_295] = fn_plot_CAPE_and_RH_RCE(0,T_LCL295(i),p_LCL295(i),T_LNB295(i),gammaLCL295(i));
-%         [PE_R16,epsilon_R16,RH_R16_295,CAPE_R16_295] = fn_plot_CAPE_and_RH_RCE(0,285.72,93297.51,198.98); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
         [PE_imp295small(i),eps_imp295small(i)] = find_PE_epsilon(PE_R16,epsilon_R16,double(CAPE_R16_295),double(RH_R16_295),double(cape295small(i)),double(hur295small_avg(i))/100);
@@ -264,12 +265,12 @@ for i = 1:length(small_model_list)
         hur300small_avg(i) = sum(prof300small(i).hur.*prof300small(i).rho.* ILT.*dz)./sum(prof300small(i).rho.* ILT.*dz);
         
         %Lift from lowest model level
-        Tinit = prof300small(i).ta(1);
-        rvinit = prof300small(i).rv(1);
-        pinit = prof300small(i).p(1);
+        Tinit = prof300small(i).ta(1); %K
+        rvinit = prof300small(i).rv(1); %g/g
+        pinit = prof300small(i).p(1); %hPa
         
         %Calculate LCL 
-        [T_LCL300(i),p_LCL300(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
+        [T_LCL300(i),p_LCL300(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100); %T_LCL in K, p_LCL in Pa
         
         %Calculate gamma at LCL
         nz = length(prof300small(i).z);
@@ -284,10 +285,10 @@ for i = 1:length(small_model_list)
         
         %Calcluate CAPE & LNB 
         [cape300small(i),p_LNB300(i),Tv_LNB300(i),T_LNB300(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof300small(i).tv,prof300small(i).p*100,prof300small(i).ta,prof300small(i).z*1000);
+        %CAPE in J/kg, p_LNB in Pa, Tv_LNB in K, T_LNB in K
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
         [PE_R16,epsilon_R16,RH_R16_300,CAPE_R16_300] = fn_plot_CAPE_and_RH_RCE(0,T_LCL300(i),p_LCL300(i),T_LNB300(i),gammaLCL300(i));
-%         [PE_R16,epsilon_R16,RH_R16_300,CAPE_R16_300] = fn_plot_CAPE_and_RH_RCE(0,291.14,93953.86,198.11); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
         [PE_imp300small(i),eps_imp300small(i)] = find_PE_epsilon(PE_R16,epsilon_R16,double(CAPE_R16_300),double(RH_R16_300),double(cape300small(i)),double(hur300small_avg(i))/100);
@@ -314,12 +315,12 @@ for i = 1:length(small_model_list)
         hur305small_avg(i) = sum(prof305small(i).hur.*prof305small(i).rho.* ILT.*dz)./sum(prof305small(i).rho.* ILT.*dz);
         
         %Lift from lowest model level
-        Tinit = prof305small(i).ta(1);
-        rvinit = prof305small(i).rv(1);
-        pinit = prof305small(i).p(1);
+        Tinit = prof305small(i).ta(1); %K
+        rvinit = prof305small(i).rv(1); %g/g
+        pinit = prof305small(i).p(1); %hPs
         
         %Calculate LCL 
-        [T_LCL305(i),p_LCL305(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100);
+        [T_LCL305(i),p_LCL305(i)] = atm.calculate_LCL(Tinit,rvinit,pinit*100); %T_LCL in K, p_LCL in Pa
         
         %Calculate gamma at LCL
         nz = length(prof305small(i).z);
@@ -334,14 +335,13 @@ for i = 1:length(small_model_list)
         
         %Calcluate CAPE & LNB 
         [cape305small(i),p_LNB305(i),Tv_LNB305(i),T_LNB305(i)] = calculate_CAPE(Tinit,rvinit,pinit*100,prof305small(i).tv,prof305small(i).p*100,prof305small(i).ta,prof305small(i).z*1000);
+        %CAPE in J/kg, p_LNB in Pa, Tv_LNB in K, T_LNB in K
         
         %calculate theory for CAPE based on LCL and LNB, don't plot
         [PE_R16,epsilon_R16,RH_R16_305,CAPE_R16_305] = fn_plot_CAPE_and_RH_RCE(0,T_LCL305(i),p_LCL305(i),T_LNB305(i),gammaLCL305(i));
-%         [PE_R16,epsilon_R16,RH_R16_305,CAPE_R16_305] = fn_plot_CAPE_and_RH_RCE(0,296.63,94461.73,199.93); %use model mean values
         
         % Diagnose PE & epsilon implied by theory
-        [PE_imp305small(i),eps_imp305small(i)] = find_PE_epsilon(PE_R16,epsilon_R16,double(CAPE_R16_305),double(RH_R16_305),double(cape305small(i)),double(hur305small_avg(i))/100);
-        
+        [PE_imp305small(i),eps_imp305small(i)] = find_PE_epsilon(PE_R16,epsilon_R16,double(CAPE_R16_305),double(RH_R16_305),double(cape305small(i)),double(hur305small_avg(i))/100);     
         
     end
     
@@ -353,22 +353,25 @@ toc;
 for i = 1:length(small_model_list)
     
     %%295%%
-    [CAPE_theory295(i),RH_theory295(i),gammab] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),eps_imp295small(i),PE_imp295small(i),gammaLCL295(i),'gamma');
-    [CAPE_theory295_vary_depth(i),RH_theory295_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),nanmean(eps_imp295small),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
-    [CAPE_theory295_vary_PE(i),RH_theory295_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),nanmean(eps_imp295small),PE_imp295small(i),nanmean(gammaLCL295),'gamma');
-    [CAPE_theory295_vary_eps(i),RH_theory295_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),eps_imp295small(i),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295(i),RH_theory295(i)] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),eps_imp295small(i),PE_imp295small(i),gammaLCL295(i),'gamma');
+    [CAPE_theory295_vary_depth(i),RH_theory295_vary_depth(i)] = calculate_CAPE_theory(T_LCL295(i),T_LNB295(i),p_LCL295(i),nanmean(eps_imp295small),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295_vary_PE(i),RH_theory295_vary_PE(i)] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),nanmean(eps_imp295small),PE_imp295small(i),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295_vary_eps(i),RH_theory295_vary_eps(i)] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),eps_imp295small(i),nanmean(PE_imp295small),nanmean(gammaLCL295),'gamma');
+    [CAPE_theory295_vary_gamma(i),RH_theory295_vary_gamma(i)] = calculate_CAPE_theory(T_LCL295(i),nanmean(T_LNB295),p_LCL295(i),nanmean(eps_imp295small),nanmean(PE_imp295small),gammaLCL295(i),'gamma');
     
     %%300%%
-    [CAPE_theory300(i),RH_theory300(i),gammab] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),eps_imp300small(i),PE_imp300small(i),gammaLCL300(i),'gamma');
-    [CAPE_theory300_vary_depth(i),RH_theory300_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),nanmean(eps_imp300small),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
-    [CAPE_theory300_vary_PE(i),RH_theory300_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),nanmean(eps_imp300small),PE_imp300small(i),nanmean(gammaLCL300),'gamma');
-    [CAPE_theory300_vary_eps(i),RH_theory300_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),eps_imp300small(i),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300(i),RH_theory300(i)] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),eps_imp300small(i),PE_imp300small(i),gammaLCL300(i),'gamma');
+    [CAPE_theory300_vary_depth(i),RH_theory300_vary_depth(i)] = calculate_CAPE_theory(T_LCL300(i),T_LNB300(i),p_LCL300(i),nanmean(eps_imp300small),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300_vary_PE(i),RH_theory300_vary_PE(i)] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),nanmean(eps_imp300small),PE_imp300small(i),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300_vary_eps(i),RH_theory300_vary_eps(i)] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),eps_imp300small(i),nanmean(PE_imp300small),nanmean(gammaLCL300),'gamma');
+    [CAPE_theory300_vary_gamma(i),RH_theory300_vary_gamma(i)] = calculate_CAPE_theory(T_LCL300(i),nanmean(T_LNB300),p_LCL300(i),nanmean(eps_imp300small),nanmean(PE_imp300small),gammaLCL300(i),'gamma');
     
     %%305%%
-    [CAPE_theory305(i),RH_theory305(i),gammab] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),eps_imp305small(i),PE_imp305small(i),gammaLCL305(i),'gamma');
-    [CAPE_theory305_vary_depth(i),RH_theory305_vary_depth(i),gammab] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),nanmean(eps_imp305small),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
-    [CAPE_theory305_vary_PE(i),RH_theory305_vary_PE(i),gammab] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),nanmean(eps_imp305small),PE_imp305small(i),nanmean(gammaLCL305),'gamma');
-    [CAPE_theory305_vary_eps(i),RH_theory305_vary_eps(i),gammab] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),eps_imp305small(i),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305(i),RH_theory305(i)] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),eps_imp305small(i),PE_imp305small(i),gammaLCL305(i),'gamma');
+    [CAPE_theory305_vary_depth(i),RH_theory305_vary_depth(i)] = calculate_CAPE_theory(T_LCL305(i),T_LNB305(i),p_LCL305(i),nanmean(eps_imp305small),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305_vary_PE(i),RH_theory305_vary_PE(i)] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),nanmean(eps_imp305small),PE_imp305small(i),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305_vary_eps(i),RH_theory305_vary_eps(i)] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),eps_imp305small(i),nanmean(PE_imp305small),nanmean(gammaLCL305),'gamma');
+    [CAPE_theory305_vary_gamma(i),RH_theory305_vary_gamma(i)] = calculate_CAPE_theory(T_LCL305(i),nanmean(T_LNB305),p_LCL305(i),nanmean(eps_imp305small),nanmean(PE_imp305small),gammaLCL305(i),'gamma');
     
     
 end
@@ -632,40 +635,40 @@ CAPEver = CAPE(iVER);
 CAPEles = CAPE(iLES);
 CAPEexp = CAPE(iEXP);
 
-%%%%%%%%%%%%%%%%
-%Panel 1: CAPE  vs. theoretical CAPE
-%%%%%%%%%%%%%%%%
-CAPEtheory = CAPE_theory300;
-CAPEtheory_par = CAPEtheory(iPAR);
-CAPEtheory_crm = CAPEtheory(iCRM);
-CAPEtheory_ver = CAPEtheory(iVER);
-CAPEtheory_les = CAPEtheory(iLES);
-CAPEtheory_exp = CAPEtheory(iEXP);
-
-%correlations
-[rCT,pCT] = corrcoef(CAPE(logical(~isnan(CAPE).*~isnan(CAPEtheory))),CAPEtheory(logical(~isnan(CAPE).*~isnan(CAPEtheory))))
-[rCTexp,pCTexp] = corrcoef(CAPEexp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))),CAPEtheory_exp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))))
-[rCTpar,pCTpar] = corrcoef(CAPEpar(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))),CAPEtheory_par(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))))
-[rCTcrm,pCTcrm] = corrcoef(CAPEcrm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))),CAPEtheory_crm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))))
-[rCTver,pCTver] = corrcoef(CAPEver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))),CAPEtheory_ver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))))
-[rCTles,pCTles] = corrcoef(CAPEles(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))),CAPEtheory_les(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))))
-
-subplot(2,2,1)
-plot(CAPEtheory_par,CAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rCTpar(1,2),pCTpar(1,2)))
-hold on
-plot(CAPEtheory_crm,CAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rCTcrm(1,2),pCTcrm(1,2)))
-plot(CAPEtheory_ver,CAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rCTver(1,2),pCTver(1,2)))
-plot(CAPEtheory_les,CAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rCTles(1,2),pCTles(1,2)))
-%plot 1:1 line
-plot([0:100:4000],[0:100:4000],'k','HandleVisibility','off')
-
-set(gca,'FontSize',20)
-xlabel('Theoretical CAPE (J kg^{-1})')
-ylabel('CAPE (J kg^{-1})')
-title('(a) All Factors')
-ylim([0 4000])
-xlim([0 4000])
-legend('location','northwest')
+% % %%%%%%%%%%%%%%%%
+% % %Panel 1: CAPE  vs. theoretical CAPE
+% % %%%%%%%%%%%%%%%%
+% % CAPEtheory = CAPE_theory300;
+% % CAPEtheory_par = CAPEtheory(iPAR);
+% % CAPEtheory_crm = CAPEtheory(iCRM);
+% % CAPEtheory_ver = CAPEtheory(iVER);
+% % CAPEtheory_les = CAPEtheory(iLES);
+% % CAPEtheory_exp = CAPEtheory(iEXP);
+% % 
+% % %correlations
+% % [rCT,pCT] = corrcoef(CAPE(logical(~isnan(CAPE).*~isnan(CAPEtheory))),CAPEtheory(logical(~isnan(CAPE).*~isnan(CAPEtheory))))
+% % [rCTexp,pCTexp] = corrcoef(CAPEexp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))),CAPEtheory_exp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))))
+% % [rCTpar,pCTpar] = corrcoef(CAPEpar(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))),CAPEtheory_par(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))))
+% % [rCTcrm,pCTcrm] = corrcoef(CAPEcrm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))),CAPEtheory_crm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))))
+% % [rCTver,pCTver] = corrcoef(CAPEver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))),CAPEtheory_ver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))))
+% % [rCTles,pCTles] = corrcoef(CAPEles(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))),CAPEtheory_les(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))))
+% % 
+% % subplot(2,2,1)
+% % plot(CAPEtheory_par,CAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rCTpar(1,2),pCTpar(1,2)))
+% % hold on
+% % plot(CAPEtheory_crm,CAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rCTcrm(1,2),pCTcrm(1,2)))
+% % plot(CAPEtheory_ver,CAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rCTver(1,2),pCTver(1,2)))
+% % plot(CAPEtheory_les,CAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rCTles(1,2),pCTles(1,2)))
+% % %plot 1:1 line
+% % plot([0:100:4000],[0:100:4000],'k','HandleVisibility','off')
+% % 
+% % set(gca,'FontSize',20)
+% % xlabel('Theoretical CAPE (J kg^{-1})')
+% % ylabel('CAPE (J kg^{-1})')
+% % title('(a) All Factors')
+% % ylim([0 4000])
+% % xlim([0 4000])
+% % legend('location','northwest')
 
 %%%%%%%%%%%%%%%%
 %Panel 2: CAPE vs. theoretical CAPE with vary depth
@@ -772,6 +775,41 @@ ylim([0 4000])
 xlim([0 4000])
 legend('location','northwest')
 
+%%%%%%%%%%%%%%%%
+%Panel 1 CAPE vs. theoretical CAPE with vary gamma
+%%%%%%%%%%%%%%%
+CAPEtheory = CAPE_theory300_vary_gamma;
+CAPEtheory_par = CAPEtheory(iPAR);
+CAPEtheory_crm = CAPEtheory(iCRM);
+CAPEtheory_ver = CAPEtheory(iVER);
+CAPEtheory_les = CAPEtheory(iLES);
+CAPEtheory_exp = CAPEtheory(iEXP);
+
+%correlations
+[rCT,pCT] = corrcoef(CAPE(logical(~isnan(CAPE).*~isnan(CAPEtheory))),CAPEtheory(logical(~isnan(CAPE).*~isnan(CAPEtheory))))
+[rCTexp,pCTexp] = corrcoef(CAPEexp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))),CAPEtheory_exp(logical(~isnan(CAPEexp).*~isnan(CAPEtheory_exp))))
+[rCTpar,pCTpar] = corrcoef(CAPEpar(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))),CAPEtheory_par(logical(~isnan(CAPEpar).*~isnan(CAPEtheory_par))))
+[rCTcrm,pCTcrm] = corrcoef(CAPEcrm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))),CAPEtheory_crm(logical(~isnan(CAPEcrm).*~isnan(CAPEtheory_crm))))
+[rCTver,pCTver] = corrcoef(CAPEver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))),CAPEtheory_ver(logical(~isnan(CAPEver).*~isnan(CAPEtheory_ver))))
+[rCTles,pCTles] = corrcoef(CAPEles(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))),CAPEtheory_les(logical(~isnan(CAPEles).*~isnan(CAPEtheory_les))))
+
+subplot(2,2,1)
+plot(CAPEtheory_par,CAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rCTpar(1,2),pCTpar(1,2)))
+hold on
+plot(CAPEtheory_crm,CAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rCTcrm(1,2),pCTcrm(1,2)))
+plot(CAPEtheory_ver,CAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rCTver(1,2),pCTver(1,2)))
+plot(CAPEtheory_les,CAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rCTles(1,2),pCTles(1,2)))
+%plot 1:1 line
+plot([0:100:4000],[0:100:4000],'k','HandleVisibility','off')
+
+set(gca,'FontSize',20)
+xlabel('Theoretical CAPE (J kg^{-1})')
+ylabel('CAPE (J kg^{-1})')
+title('(a) \gamma_{LCL}')
+ylim([0 4000])
+xlim([0 4000])
+legend('location','northwest')
+
 
 % gcfsavepdf('Fig-CAPE-Tlnb-interp.pdf')
 gcfsavepdf(['Fig06-CAPE-' num2str(z1) '-' num2str(z2) '.pdf'])
@@ -784,11 +822,8 @@ gcfsavepdf(['Fig06-CAPE-' num2str(z1) '-' num2str(z2) '.pdf'])
 cape305small(strcmp(small_model_list,'DALES')==1)=NaN;
 cape305small(strcmp(small_model_list,'DALES-damping')==1)=NaN;
 
-%compute CC scaling as dqsat(SST)
-qs295 = atm.q_sat(295,1014.8*100);
-qs300 = atm.q_sat(300,1014.8*100);
-qs305 = atm.q_sat(305,1014.8*100);
-CCscale = (100/10)*(qs305-qs295)/qs300;
+%compute CC scaling as 100*1/es des/dT = 100*L/(RvT^2) ==> %/K where T = SST
+CCscale = 100*c.Lv0/(c.Rv*300^2);
 
 %change in CAPE with warming
 dCAPE = (100/10)*(cape305small-cape295small)./cape300small; % percent/K over 10K range
@@ -801,41 +836,41 @@ dCAPEexp = dCAPE(iEXP);
 % figure('Position',[100 100 700 1600]) %for 4x1 subplot
 figure('Position',[100 100 1000 1000])
 
-%%%%%%%%%%%%%%%%
-%Panel 1: CAPE  vs. theoretical CAPE
-%%%%%%%%%%%%%%%%
-dCAPEtheory = (100/10)*(CAPE_theory305-CAPE_theory295)./CAPE_theory300; % percent/K over 10K range
-dCAPEtheory_par = dCAPEtheory(iPAR);
-dCAPEtheory_crm = dCAPEtheory(iCRM);
-dCAPEtheory_ver = dCAPEtheory(iVER);
-dCAPEtheory_les = dCAPEtheory(iLES);
-dCAPEtheory_exp = dCAPEtheory(iEXP);
-
-%correlations
-[rdCT,pdCT] = corrcoef(dCAPE(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))),dCAPEtheory(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))))
-[rdCTexp,pdCTexp] = corrcoef(dCAPEexp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))),dCAPEtheory_exp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))))
-[rdCTpar,pdCTpar] = corrcoef(dCAPEpar(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))),dCAPEtheory_par(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))));
-[rdCTcrm,pdCTcrm] = corrcoef(dCAPEcrm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))),dCAPEtheory_crm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))));
-[rdCTver,pdCTver] = corrcoef(dCAPEver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))),dCAPEtheory_ver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))));
-[rdCTles,pdCTles] = corrcoef(dCAPEles(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))),dCAPEtheory_les(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))));
-
-subplot(2,2,1)
-plot(dCAPEtheory_par,dCAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdCTpar(1,2),pdCTpar(1,2)))
-hold on
-plot(dCAPEtheory_crm,dCAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdCTcrm(1,2),pdCTcrm(1,2)))
-plot(dCAPEtheory_ver,dCAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdCTver(1,2),pdCTver(1,2)))
-plot(dCAPEtheory_les,dCAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdCTles(1,2),pdCTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Change in Theoretical CAPE (% K^{-1})')
-ylabel('Change in CAPE (% K^{-1})')
-title('(a) All Factors')
-ylim([0 20])
-xlim([0 20])
-plot([-10:10:30],[-10:10:30],'k','HandleVisibility','off')
-hline(CCscale,'k--')
-vline(0,'k--')
-legend('location','northwest')
+% %%%%%%%%%%%%%%%%
+% %Panel 1: CAPE  vs. theoretical CAPE
+% %%%%%%%%%%%%%%%%
+% dCAPEtheory = (100/10)*(CAPE_theory305-CAPE_theory295)./CAPE_theory300; % percent/K over 10K range
+% dCAPEtheory_par = dCAPEtheory(iPAR);
+% dCAPEtheory_crm = dCAPEtheory(iCRM);
+% dCAPEtheory_ver = dCAPEtheory(iVER);
+% dCAPEtheory_les = dCAPEtheory(iLES);
+% dCAPEtheory_exp = dCAPEtheory(iEXP);
+% 
+% %correlations
+% [rdCT,pdCT] = corrcoef(dCAPE(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))),dCAPEtheory(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))))
+% [rdCTexp,pdCTexp] = corrcoef(dCAPEexp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))),dCAPEtheory_exp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))))
+% [rdCTpar,pdCTpar] = corrcoef(dCAPEpar(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))),dCAPEtheory_par(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))));
+% [rdCTcrm,pdCTcrm] = corrcoef(dCAPEcrm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))),dCAPEtheory_crm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))));
+% [rdCTver,pdCTver] = corrcoef(dCAPEver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))),dCAPEtheory_ver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))));
+% [rdCTles,pdCTles] = corrcoef(dCAPEles(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))),dCAPEtheory_les(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))));
+% 
+% subplot(2,2,1)
+% plot(dCAPEtheory_par,dCAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdCTpar(1,2),pdCTpar(1,2)))
+% hold on
+% plot(dCAPEtheory_crm,dCAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdCTcrm(1,2),pdCTcrm(1,2)))
+% plot(dCAPEtheory_ver,dCAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdCTver(1,2),pdCTver(1,2)))
+% plot(dCAPEtheory_les,dCAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdCTles(1,2),pdCTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Change in Theoretical CAPE (% K^{-1})')
+% ylabel('Change in CAPE (% K^{-1})')
+% title('(a) All Factors')
+% ylim([0 20])
+% xlim([0 20])
+% plot([-10:10:30],[-10:10:30],'k','HandleVisibility','off')
+% hline(CCscale,'k--')
+% vline(0,'k--')
+% legend('location','northwest')
 
 %%%%%%%%%%%%%%%%
 %Panel 2: CAPE change with warming vs. theoretical CAPE with vary depth change with warming
@@ -945,352 +980,44 @@ hline(CCscale,'k--')
 vline(0,'k--')
 legend('location','northwest')
 
+%%%%%%%%%%%%%%%%
+%Panel 1: CAPE change with warming vs. theoretical CAPE with vary gamma change with warming
+%%%%%%%%%%%%%%%
+dCAPEtheory = (100/10)*(CAPE_theory305_vary_gamma-CAPE_theory295_vary_gamma)./CAPE_theory300_vary_gamma; % percent/K over 10K range
+dCAPEtheory_par = dCAPEtheory(iPAR);
+dCAPEtheory_crm = dCAPEtheory(iCRM);
+dCAPEtheory_ver = dCAPEtheory(iVER);
+dCAPEtheory_les = dCAPEtheory(iLES);
+dCAPEtheory_exp = dCAPEtheory(iEXP);
+
+%correlations
+[rdCT,pdCT] = corrcoef(dCAPE(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))),dCAPEtheory(logical(~isnan(dCAPE).*~isnan(dCAPEtheory))))
+[rdCTexp,pdCTexp] = corrcoef(dCAPEexp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))),dCAPEtheory_exp(logical(~isnan(dCAPEexp).*~isnan(dCAPEtheory_exp))))
+[rdCTpar,pdCTpar] = corrcoef(dCAPEpar(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))),dCAPEtheory_par(logical(~isnan(dCAPEpar).*~isnan(dCAPEtheory_par))));
+[rdCTcrm,pdCTcrm] = corrcoef(dCAPEcrm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))),dCAPEtheory_crm(logical(~isnan(dCAPEcrm).*~isnan(dCAPEtheory_crm))));
+[rdCTver,pdCTver] = corrcoef(dCAPEver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))),dCAPEtheory_ver(logical(~isnan(dCAPEver).*~isnan(dCAPEtheory_ver))));
+[rdCTles,pdCTles] = corrcoef(dCAPEles(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))),dCAPEtheory_les(logical(~isnan(dCAPEles).*~isnan(dCAPEtheory_les))));
+
+subplot(2,2,1)
+plot(dCAPEtheory_par,dCAPEpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdCTpar(1,2),pdCTpar(1,2)))
+hold on
+plot(dCAPEtheory_crm,dCAPEcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdCTcrm(1,2),pdCTcrm(1,2)))
+plot(dCAPEtheory_ver,dCAPEver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdCTver(1,2),pdCTver(1,2)))
+plot(dCAPEtheory_les,dCAPEles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdCTles(1,2),pdCTles(1,2)))
+
+set(gca,'FontSize',20)
+xlabel('Change in Theoretical CAPE (% K^{-1})')
+ylabel('Change in CAPE (% K^{-1})')
+title('(a) \gamma_{LCL}')
+ylim([0 20])
+xlim([0 20])
+plot([-10:10:30],[-10:10:30],'k','HandleVisibility','off')
+hline(CCscale,'k--')
+vline(0,'k--')
+legend('location','northwest')
+
 % gcfsavepdf('Fig-CAPE-Tlnb-interp.pdf')
 gcfsavepdf(['Fig08-CAPEchange-' num2str(z1) '-' num2str(z2) '.pdf'])
-
-%% Explanations for intermodel spread in RH
-% figure('Position',[100 100 700 1600]) %for 4x1 subplot
-figure('Position',[100 100 1000 1000])
-RH = hur300small_avg;
-RHpar = hur300small_avg(iPAR);
-RHcrm = hur300small_avg(iCRM);
-RHver = hur300small_avg(iVER);
-RHles = hur300small_avg(iLES);
-RHexp = hur300small_avg(iEXP);
-
-%%%%%%%%%%%%%%%%
-%Panel 1: RH  vs. theoretical RH
-%%%%%%%%%%%%%%%%
-RHtheory = RH_theory300;
-RHtheory_par = RHtheory(iPAR);
-RHtheory_crm = RHtheory(iCRM);
-RHtheory_ver = RHtheory(iVER);
-RHtheory_les = RHtheory(iLES);
-RHtheory_exp = RHtheory(iEXP);
-
-%correlations
-[rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
-[rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
-[rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
-[rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
-[rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
-[rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
-
-subplot(2,2,1)
-plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
-hold on
-plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
-plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
-plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Theoretical RH')
-ylabel('RH')
-title('(a) All Factors')
-xlim([30 100])
-ylim([30 100])
-plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 2: RH  vs. theoretical RH with vary depth
-%%%%%%%%%%%%%%%%
-RHtheory = RH_theory300_vary_depth;
-RHtheory_par = RHtheory(iPAR);
-RHtheory_crm = RHtheory(iCRM);
-RHtheory_ver = RHtheory(iVER);
-RHtheory_les = RHtheory(iLES);
-RHtheory_exp = RHtheory(iEXP);
-
-%correlations
-[rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
-[rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
-[rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
-[rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
-[rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
-[rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
-%set NaNs and tiny to 0 correlation
-rRTpar(rRTpar<10^-4)=0;
-rRTpar(isnan(rRTpar))=0;
-pRTpar(isnan(pRTpar))=1;
-rRTcrm(rRTcrm<10^-4)=0;
-rRTcrm(isnan(rRTcrm))=0;
-pRTcrm(isnan(pRTcrm))=1;
-rRTver(rRTver<10^-4)=0;
-rRTver(isnan(rRTver))=0;
-pRTver(isnan(pRTver))=1;
-rRTles(rRTles<10^-4)=0;
-rRTles(isnan(rRTles))=0;
-pRTles(isnan(pRTles))=1;
-
-subplot(2,2,2)
-plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
-hold on
-plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
-plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
-plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Theoretical RH')
-ylabel('RH')
-title('(b) Temperature of Convecting Top')
-xlim([30 100])
-ylim([30 100])
-plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 3: RH  vs. theoretical RH with vary PE
-%%%%%%%%%%%%%%%%
-RHtheory = RH_theory300_vary_PE;
-RHtheory_par = RHtheory(iPAR);
-RHtheory_crm = RHtheory(iCRM);
-RHtheory_ver = RHtheory(iVER);
-RHtheory_les = RHtheory(iLES);
-RHtheory_exp = RHtheory(iEXP);
-
-%correlations
-[rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
-[rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
-[rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
-[rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
-[rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
-[rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
-
-subplot(2,2,3)
-plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
-hold on
-plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
-plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
-plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Theoretical RH')
-ylabel('RH')
-title('(c) Precip. Efficiency')
-xlim([30 100])
-ylim([30 100])
-plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 4: RH  vs. theoretical RH with vary entrainment
-%%%%%%%%%%%%%%%%
-RHtheory = RH_theory300_vary_eps;
-RHtheory_par = RHtheory(iPAR);
-RHtheory_crm = RHtheory(iCRM);
-RHtheory_ver = RHtheory(iVER);
-RHtheory_les = RHtheory(iLES);
-RHtheory_exp = RHtheory(iEXP);
-
-%correlations
-[rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
-[rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
-[rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
-[rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
-[rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
-[rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
-
-subplot(2,2,4)
-plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
-hold on
-plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
-plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
-plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Theoretical RH')
-ylabel('RH')
-title('(d) Entrainment')
-xlim([30 100])
-ylim([30 100])
-plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
-legend('location','northwest')
-
-gcfsavepdf(['Fig08-RH-' num2str(z1) '-' num2str(z2) '.pdf'])
-
-
-%% Explanations for intermodel spread in RH change with warming
-%Force RH at 305 to be NaN for DALES and DALES-damping to ignore them for
-%changes with warming, because they are aggregated at 305
-hur305small_avg(strcmp(small_model_list,'DALES')==1)=NaN;
-hur305small_avg(strcmp(small_model_list,'DALES-damping')==1)=NaN;
-
-%change in RH with warming
-dRH = (100/10)*(hur305small_avg-hur295small_avg)./hur300small_avg; % percent/K over 10K range
-dRHpar = dRH(iPAR);
-dRHcrm = dRH(iCRM);
-dRHver = dRH(iVER);
-dRHles = dRH(iLES);
-dRHexp = dRH(iEXP);
-
-% figure('Position',[100 100 700 1600]) %for 4x1 subplot
-figure('Position',[100 100 1000 1000])
-
-%%%%%%%%%%%%%%%%
-%Panel 1: RH change with warming vs. theoretical RH change with warming
-%%%%%%%%%%%%%%%%
-dRHtheory = (100/10)*(RH_theory305-RH_theory295)./RH_theory300; % percent/K over 10K range;
-dRHtheory_par = dRHtheory(iPAR);
-dRHtheory_crm = dRHtheory(iCRM);
-dRHtheory_ver = dRHtheory(iVER);
-dRHtheory_les = dRHtheory(iLES);
-dRHtheory_exp = dRHtheory(iEXP);
-
-%correlations
-[rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
-[rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
-[rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
-[rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
-[rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
-[rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
-
-subplot(2,2,1)
-plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
-hold on
-plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
-plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
-plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Change in Theoretical RH (% K^{-1})')
-ylabel('Change in RH (% K^{-1})')
-title('(a) All Factors')
-xlim([-1 3])
-ylim([-1 3])
-vline(0,'k--')
-hline(0,'k--')
-plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 2: RH change with warming vs. theoretical RH with vary depth change with warming
-%%%%%%%%%%%%%%%%
-dRHtheory = (100/10)*(RH_theory305_vary_depth-RH_theory295_vary_depth)./RH_theory300_vary_depth; % percent/K over 10K range;
-dRHtheory_par = dRHtheory(iPAR);
-dRHtheory_crm = dRHtheory(iCRM);
-dRHtheory_ver = dRHtheory(iVER);
-dRHtheory_les = dRHtheory(iLES);
-dRHtheory_exp = dRHtheory(iEXP);
-
-%correlations
-[rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
-[rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
-[rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
-[rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
-[rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
-[rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
-%set NaNs and tiny to 0 correlation
-rdRTpar(rdRTpar<10^-4)=0;
-rdRTpar(isnan(rdRTpar))=0;
-pdRTpar(isnan(pdRTpar))=1;
-rdRTcrm(rdRTcrm<10^-4)=0;
-rdRTcrm(isnan(rdRTcrm))=0;
-pdRTcrm(isnan(pdRTcrm))=1;
-rdRTver(rdRTver<10^-4)=0;
-rdRTver(isnan(rdRTver))=0;
-pdRTver(isnan(pdRTver))=1;
-rdRTles(rdRTles<10^-4)=0;
-rdRTles(isnan(rdRTles))=0;
-pdRTles(isnan(pdRTles))=1;
-
-subplot(2,2,2)
-plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
-hold on
-plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
-plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
-plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Change in Theoretical RH (% K^{-1})')
-ylabel('Change in RH (% K^{-1})')
-title('(b) Temperature of Convecting Top')
-xlim([-1 3])
-ylim([-1 3])
-vline(0,'k--')
-hline(0,'k--')
-plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 3: RH change with warming vs. theoretical RH with vary PE change with warming
-%%%%%%%%%%%%%%%%
-dRHtheory = (100/10)*(RH_theory305_vary_PE-RH_theory295_vary_PE)./RH_theory300_vary_PE; % percent/K over 10K range;
-dRHtheory_par = dRHtheory(iPAR);
-dRHtheory_crm = dRHtheory(iCRM);
-dRHtheory_ver = dRHtheory(iVER);
-dRHtheory_les = dRHtheory(iLES);
-dRHtheory_exp = dRHtheory(iEXP);
-
-%correlations
-[rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
-[rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
-[rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
-[rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
-[rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
-[rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
-
-subplot(2,2,3)
-plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
-hold on
-plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
-plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
-plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Change in Theoretical RH (% K^{-1})')
-ylabel('Change in RH (% K^{-1})')
-title('(c) Precipitation Efficiency')
-xlim([-1 3])
-ylim([-1 3])
-vline(0,'k--')
-hline(0,'k--')
-plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
-legend('location','northwest')
-
-%%%%%%%%%%%%%%%%
-%Panel 4: RH change with warming vs. theoretical RH with vary entrainment change with warming
-%%%%%%%%%%%%%%%%
-dRHtheory = (100/10)*(RH_theory305_vary_eps-RH_theory295_vary_eps)./RH_theory300_vary_eps; % percent/K over 10K range;
-dRHtheory_par = dRHtheory(iPAR);
-dRHtheory_crm = dRHtheory(iCRM);
-dRHtheory_ver = dRHtheory(iVER);
-dRHtheory_les = dRHtheory(iLES);
-dRHtheory_exp = dRHtheory(iEXP);
-
-%correlations
-[rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
-[rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
-[rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
-[rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
-[rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
-[rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
-
-subplot(2,2,4)
-plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
-hold on
-plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
-plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
-plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
-
-set(gca,'FontSize',20)
-xlabel('Change in Theoretical RH (% K^{-1})')
-ylabel('Change in RH (% K^{-1})')
-title('(d) Entrainment')
-xlim([-1 3])
-ylim([-1 3])
-vline(0,'k--')
-hline(0,'k--')
-plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
-legend('location','northwest')
-
-
-gcfsavepdf(['Fig09-RHchange-' num2str(z1) '-' num2str(z2) '.pdf'])
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %% COMBINED PLOT FOR Explanations for intermodel spread in RH AND ITS CHANGES WITH WARMING
 
@@ -1419,6 +1146,8 @@ ylabel('Change in RH (% K^{-1})')
 title('(c) Precipitation Efficiency')
 xlim([-1 3])
 ylim([-1 3])
+% xlim([-5 5])
+% ylim([-5 5])
 vline(0,'k--')
 hline(0,'k--')
 plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
@@ -1455,6 +1184,8 @@ ylabel('Change in RH (% K^{-1})')
 title('(d) Entrainment')
 xlim([-1 3])
 ylim([-1 3])
+% xlim([-5 5])
+% ylim([-5 5])
 vline(0,'k--')
 hline(0,'k--')
 plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
@@ -1467,7 +1198,344 @@ gcfsavepdf(['Fig07-RHRHchange-' num2str(z1) '-' num2str(z2) '.pdf'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-
-
+% %% Explanations for intermodel spread in RH
+% % figure('Position',[100 100 700 1600]) %for 4x1 subplot
+% figure('Position',[100 100 1000 1000])
+% RH = hur300small_avg;
+% RHpar = hur300small_avg(iPAR);
+% RHcrm = hur300small_avg(iCRM);
+% RHver = hur300small_avg(iVER);
+% RHles = hur300small_avg(iLES);
+% RHexp = hur300small_avg(iEXP);
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 1: RH  vs. theoretical RH with vary gamma
+% %%%%%%%%%%%%%%%%
+% RHtheory = RH_theory300_vary_gamma;
+% RHtheory_par = RHtheory(iPAR);
+% RHtheory_crm = RHtheory(iCRM);
+% RHtheory_ver = RHtheory(iVER);
+% RHtheory_les = RHtheory(iLES);
+% RHtheory_exp = RHtheory(iEXP);
+% 
+% %correlations
+% [rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
+% [rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
+% [rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
+% [rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
+% [rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
+% [rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
+% 
+% subplot(2,2,1)
+% plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
+% hold on
+% plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
+% plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
+% plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Theoretical RH')
+% ylabel('RH')
+% title('(a) \gamma')
+% xlim([30 100])
+% ylim([30 100])
+% plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 2: RH  vs. theoretical RH with vary depth
+% %%%%%%%%%%%%%%%%
+% RHtheory = RH_theory300_vary_depth;
+% RHtheory_par = RHtheory(iPAR);
+% RHtheory_crm = RHtheory(iCRM);
+% RHtheory_ver = RHtheory(iVER);
+% RHtheory_les = RHtheory(iLES);
+% RHtheory_exp = RHtheory(iEXP);
+% 
+% %correlations
+% [rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
+% [rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
+% [rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
+% [rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
+% [rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
+% [rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
+% %set NaNs and tiny to 0 correlation
+% rRTpar(rRTpar<10^-4)=0;
+% rRTpar(isnan(rRTpar))=0;
+% pRTpar(isnan(pRTpar))=1;
+% rRTcrm(rRTcrm<10^-4)=0;
+% rRTcrm(isnan(rRTcrm))=0;
+% pRTcrm(isnan(pRTcrm))=1;
+% rRTver(rRTver<10^-4)=0;
+% rRTver(isnan(rRTver))=0;
+% pRTver(isnan(pRTver))=1;
+% rRTles(rRTles<10^-4)=0;
+% rRTles(isnan(rRTles))=0;
+% pRTles(isnan(pRTles))=1;
+% 
+% subplot(2,2,2)
+% plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
+% hold on
+% plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
+% plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
+% plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Theoretical RH')
+% ylabel('RH')
+% title('(b) Temperature of Convecting Top')
+% xlim([30 100])
+% ylim([30 100])
+% plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 3: RH  vs. theoretical RH with vary PE
+% %%%%%%%%%%%%%%%%
+% RHtheory = RH_theory300_vary_PE;
+% RHtheory_par = RHtheory(iPAR);
+% RHtheory_crm = RHtheory(iCRM);
+% RHtheory_ver = RHtheory(iVER);
+% RHtheory_les = RHtheory(iLES);
+% RHtheory_exp = RHtheory(iEXP);
+% 
+% %correlations
+% [rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
+% [rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
+% [rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
+% [rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
+% [rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
+% [rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
+% 
+% subplot(2,2,3)
+% plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
+% hold on
+% plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
+% plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
+% plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Theoretical RH')
+% ylabel('RH')
+% title('(c) Precip. Efficiency')
+% xlim([30 100])
+% ylim([30 100])
+% plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 4: RH  vs. theoretical RH with vary entrainment
+% %%%%%%%%%%%%%%%%
+% RHtheory = RH_theory300_vary_eps;
+% RHtheory_par = RHtheory(iPAR);
+% RHtheory_crm = RHtheory(iCRM);
+% RHtheory_ver = RHtheory(iVER);
+% RHtheory_les = RHtheory(iLES);
+% RHtheory_exp = RHtheory(iEXP);
+% 
+% %correlations
+% [rRT,pRT] = corrcoef(RH(logical(~isnan(RH).*~isnan(RHtheory))),RHtheory(logical(~isnan(RH).*~isnan(RHtheory))))
+% [rRTexp,pRTexp] = corrcoef(RHexp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))),RHtheory_exp(logical(~isnan(RHexp).*~isnan(RHtheory_exp))))
+% [rRTpar,pRTpar] = corrcoef(RHpar(logical(~isnan(RHpar).*~isnan(RHtheory_par))),RHtheory_par(logical(~isnan(RHpar).*~isnan(RHtheory_par))));
+% [rRTcrm,pRTcrm] = corrcoef(RHcrm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))),RHtheory_crm(logical(~isnan(RHcrm).*~isnan(RHtheory_crm))));
+% [rRTver,pRTver] = corrcoef(RHver(logical(~isnan(RHver).*~isnan(RHtheory_ver))),RHtheory_ver(logical(~isnan(RHver).*~isnan(RHtheory_ver))));
+% [rRTles,pRTles] = corrcoef(RHles(logical(~isnan(RHles).*~isnan(RHtheory_les))),RHtheory_les(logical(~isnan(RHles).*~isnan(RHtheory_les))));
+% 
+% subplot(2,2,4)
+% plot(RHtheory_par*100,RHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rRTpar(1,2),pRTpar(1,2)))
+% hold on
+% plot(RHtheory_crm*100,RHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rRTcrm(1,2),pRTcrm(1,2)))
+% plot(RHtheory_ver*100,RHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rRTver(1,2),pRTver(1,2)))
+% plot(RHtheory_les*100,RHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rRTles(1,2),pRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Theoretical RH')
+% ylabel('RH')
+% title('(d) Entrainment')
+% xlim([30 100])
+% ylim([30 100])
+% plot([30:10:100],[30:10:100],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% % gcfsavepdf(['FigXX-RH-' num2str(z1) '-' num2str(z2) '.pdf'])
+% 
+% 
+% %% Explanations for intermodel spread in RH change with warming
+% %Force RH at 305 to be NaN for DALES and DALES-damping to ignore them for
+% %changes with warming, because they are aggregated at 305
+% hur305small_avg(strcmp(small_model_list,'DALES')==1)=NaN;
+% hur305small_avg(strcmp(small_model_list,'DALES-damping')==1)=NaN;
+% 
+% %change in RH with warming
+% dRH = (100/10)*(hur305small_avg-hur295small_avg)./hur300small_avg; % percent/K over 10K range
+% dRHpar = dRH(iPAR);
+% dRHcrm = dRH(iCRM);
+% dRHver = dRH(iVER);
+% dRHles = dRH(iLES);
+% dRHexp = dRH(iEXP);
+% 
+% % figure('Position',[100 100 700 1600]) %for 4x1 subplot
+% figure('Position',[100 100 1000 1000])
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 1: RH change with warming vs. theoretical RH with vary gamma change with warming
+% %%%%%%%%%%%%%%%%
+% dRHtheory = (100/10)*(RH_theory305_vary_gamma-RH_theory295_vary_gamma)./RH_theory300_vary_gamma; % percent/K over 10K range;
+% dRHtheory_par = dRHtheory(iPAR);
+% dRHtheory_crm = dRHtheory(iCRM);
+% dRHtheory_ver = dRHtheory(iVER);
+% dRHtheory_les = dRHtheory(iLES);
+% dRHtheory_exp = dRHtheory(iEXP);
+% 
+% %correlations
+% [rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
+% [rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
+% [rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
+% [rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
+% [rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
+% [rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
+% 
+% subplot(2,2,1)
+% plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
+% hold on
+% plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
+% plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
+% plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Change in Theoretical RH (% K^{-1})')
+% ylabel('Change in RH (% K^{-1})')
+% title('(a) \gamma')
+% xlim([-1 3])
+% ylim([-1 3])
+% vline(0,'k--')
+% hline(0,'k--')
+% plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 2: RH change with warming vs. theoretical RH with vary depth change with warming
+% %%%%%%%%%%%%%%%%
+% dRHtheory = (100/10)*(RH_theory305_vary_depth-RH_theory295_vary_depth)./RH_theory300_vary_depth; % percent/K over 10K range;
+% dRHtheory_par = dRHtheory(iPAR);
+% dRHtheory_crm = dRHtheory(iCRM);
+% dRHtheory_ver = dRHtheory(iVER);
+% dRHtheory_les = dRHtheory(iLES);
+% dRHtheory_exp = dRHtheory(iEXP);
+% 
+% %correlations
+% [rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
+% [rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
+% [rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
+% [rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
+% [rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
+% [rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
+% %set NaNs and tiny to 0 correlation
+% rdRTpar(rdRTpar<10^-4)=0;
+% rdRTpar(isnan(rdRTpar))=0;
+% pdRTpar(isnan(pdRTpar))=1;
+% rdRTcrm(rdRTcrm<10^-4)=0;
+% rdRTcrm(isnan(rdRTcrm))=0;
+% pdRTcrm(isnan(pdRTcrm))=1;
+% rdRTver(rdRTver<10^-4)=0;
+% rdRTver(isnan(rdRTver))=0;
+% pdRTver(isnan(pdRTver))=1;
+% rdRTles(rdRTles<10^-4)=0;
+% rdRTles(isnan(rdRTles))=0;
+% pdRTles(isnan(pdRTles))=1;
+% 
+% subplot(2,2,2)
+% plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
+% hold on
+% plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
+% plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
+% plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Change in Theoretical RH (% K^{-1})')
+% ylabel('Change in RH (% K^{-1})')
+% title('(b) Temperature of Convecting Top')
+% xlim([-1 3])
+% ylim([-1 3])
+% vline(0,'k--')
+% hline(0,'k--')
+% plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 3: RH change with warming vs. theoretical RH with vary PE change with warming
+% %%%%%%%%%%%%%%%%
+% dRHtheory = (100/10)*(RH_theory305_vary_PE-RH_theory295_vary_PE)./RH_theory300_vary_PE; % percent/K over 10K range;
+% dRHtheory_par = dRHtheory(iPAR);
+% dRHtheory_crm = dRHtheory(iCRM);
+% dRHtheory_ver = dRHtheory(iVER);
+% dRHtheory_les = dRHtheory(iLES);
+% dRHtheory_exp = dRHtheory(iEXP);
+% 
+% %correlations
+% [rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
+% [rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
+% [rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
+% [rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
+% [rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
+% [rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
+% 
+% subplot(2,2,3)
+% plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
+% hold on
+% plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
+% plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
+% plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Change in Theoretical RH (% K^{-1})')
+% ylabel('Change in RH (% K^{-1})')
+% title('(c) Precipitation Efficiency')
+% xlim([-1 3])
+% ylim([-1 3])
+% vline(0,'k--')
+% hline(0,'k--')
+% plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% %%%%%%%%%%%%%%%%
+% %Panel 4: RH change with warming vs. theoretical RH with vary entrainment change with warming
+% %%%%%%%%%%%%%%%%
+% dRHtheory = (100/10)*(RH_theory305_vary_eps-RH_theory295_vary_eps)./RH_theory300_vary_eps; % percent/K over 10K range;
+% dRHtheory_par = dRHtheory(iPAR);
+% dRHtheory_crm = dRHtheory(iCRM);
+% dRHtheory_ver = dRHtheory(iVER);
+% dRHtheory_les = dRHtheory(iLES);
+% dRHtheory_exp = dRHtheory(iEXP);
+% 
+% %correlations
+% [rdRT,pdRT] = corrcoef(dRH(logical(~isnan(dRH).*~isnan(dRHtheory))),dRHtheory(logical(~isnan(dRH).*~isnan(dRHtheory))))
+% [rdRTexp,pdRTexp] = corrcoef(dRHexp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))),dRHtheory_exp(logical(~isnan(dRHexp).*~isnan(dRHtheory_exp))))
+% [rdRTpar,pdRTpar] = corrcoef(dRHpar(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))),dRHtheory_par(logical(~isnan(dRHpar).*~isnan(dRHtheory_par))));
+% [rdRTcrm,pdRTcrm] = corrcoef(dRHcrm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))),dRHtheory_crm(logical(~isnan(dRHcrm).*~isnan(dRHtheory_crm))));
+% [rdRTver,pdRTver] = corrcoef(dRHver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))),dRHtheory_ver(logical(~isnan(dRHver).*~isnan(dRHtheory_ver))));
+% [rdRTles,pdRTles] = corrcoef(dRHles(logical(~isnan(dRHles).*~isnan(dRHtheory_les))),dRHtheory_les(logical(~isnan(dRHles).*~isnan(dRHtheory_les))));
+% 
+% subplot(2,2,4)
+% plot(dRHtheory_par,dRHpar,'o','MarkerSize',10,'MarkerEdgeColor',[1 0 0],'MarkerFaceColor',[1 0 0],'DisplayName',sprintf('PAR: r = %3.2f; p = %3.2f',rdRTpar(1,2),pdRTpar(1,2)))
+% hold on
+% plot(dRHtheory_crm,dRHcrm,'o','MarkerSize',10,'MarkerEdgeColor',[0 0 1],'MarkerFaceColor',[0 0 1],'DisplayName',sprintf('CRM: r = %3.2f; p = %3.2f',rdRTcrm(1,2),pdRTcrm(1,2)))
+% plot(dRHtheory_ver,dRHver,'o','MarkerSize',10,'MarkerEdgeColor',[0 180/255 1],'MarkerFaceColor',[0 180/255 1],'DisplayName',sprintf('VER: r = %3.2f; p = %3.2f',rdRTver(1,2),pdRTver(1,2)))
+% plot(dRHtheory_les,dRHles,'o','MarkerSize',10,'MarkerEdgeColor',[0 1 1],'MarkerFaceColor',[0 1 1],'DisplayName',sprintf('LES: r = %3.2f; p = %3.2f',rdRTles(1,2),pdRTles(1,2)))
+% 
+% set(gca,'FontSize',20)
+% xlabel('Change in Theoretical RH (% K^{-1})')
+% ylabel('Change in RH (% K^{-1})')
+% title('(d) Entrainment')
+% xlim([-1 3])
+% ylim([-1 3])
+% vline(0,'k--')
+% hline(0,'k--')
+% plot([-4:1:4],[-4:1:4],'k','HandleVisibility','off')
+% legend('location','northwest')
+% 
+% 
+% % gcfsavepdf(['FigXX-RHchange-' num2str(z1) '-' num2str(z2) '.pdf'])
+% 
+% 
+% 

@@ -15,7 +15,7 @@ function [CAPE,dC] = calculate_CAPE_derivatives_with_gamma(Tb,pb,Tt,epsilon,PE,g
 % Outputs:
 % 
 %   CAPE - the CAPE according to Romps (2016)
-%   dC   - of size [5, size(Tb)], with the five values being:
+%   dC   - of size [6, size(Tb)], with the five values being:
 %
 %          dC(1,:) = dCAPE/dTb          [J/kg/K]
 %          dC(2,:) = dCAPE/dpb          [J/kg/Pa]
