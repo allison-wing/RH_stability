@@ -399,6 +399,7 @@ figure('Position',[100 100 1000 400])
 % Panel 1: Param Models, CAPE vs. RH on top of theory, colored by PE proxy
 %plot theory
 subplot(1,2,1)
+xlim([0.3 1])
 fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iPAR)),nanmean(p_LCL300(iPAR)),nanmean(T_LNB300(iPAR)),nanmean(gammaLCL300(iPAR)));
 
 cape_param = cape300small(iPAR);
@@ -420,11 +421,11 @@ xlabel(['Lower-Tropospheric Relative Humidity'])
 title('(a) Parameterized Convection')
 colorbar
 caxis([0 0.6e-3])
-xlim([0.3 1])
 
 % Panel 2: Explicit Models, CAPE vs. RH on top of theory, colored by PE proxy
 %plot theory
 subplot(1,2,2)
+xlim([0.3 1])
 fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB300(iEXP)),nanmean(gammaLCL300(iEXP)));
 
 cape_expl = cape300small(iEXP);
@@ -446,7 +447,6 @@ xlabel(['Lower-Tropospheric Relative Humidity'])
 title('(b) Explicit Convection')
 colorbar
 caxis([0 0.6e-3])
-xlim([0.3 1])
 
 gcfsavepdf(['Fig05-theory-hur-cape' num2str(z1) '-' num2str(z2) '-scatter-small300-2panel.pdf'])
 
@@ -457,6 +457,7 @@ gcfsavepdf(['Fig05-theory-hur-cape' num2str(z1) '-' num2str(z2) '-scatter-small3
 
 figure('Position',[100 100 650 400])
 % subplot(3,1,3)
+xlim([0.3 1])
 fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL300(iEXP)),nanmean(p_LCL300(iEXP)),nanmean(T_LNB300(iEXP)),nanmean(gammaLCL300(iEXP)));
 
 hold on
@@ -530,8 +531,6 @@ xlabel(['Lower-Tropospheric Relative Humidity'])
 title('CRM, VER, LES')
 colorbar
 caxis([0 0.6e-3])
-xlim([0.3 1])
-
 
 gcfsavepdf(['FigSX-theory-hur-cape' num2str(z1) '-' num2str(z2) '-scatter-small300-verles.pdf'])
 

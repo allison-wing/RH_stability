@@ -97,6 +97,7 @@ end
 pCM1 =polyfit(hurCM1_avg,CAPE,1);
 
 figure;
+xlim([0.5 1])
 [PE_R16,epsilon_R16,RH_R16,CAPE_R16] = fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL),nanmean(p_LCL),nanmean(T_LNB),nanmean(gammaLCL));
 hold on
 scatter(hurCM1_avg,CAPE,100,peCM1,'filled','HandleVisibility','off')
@@ -109,7 +110,6 @@ xlabel('Lower-Tropospheric Relative Humidity')
 title('Perturbed Physics Ensemble')
 cc = colorbar;
 ylabel(cc,'Precip. Efficiency')
-xlim([0.5 1])
 % ylim([0 300])
 
 if ~doSST
@@ -188,6 +188,7 @@ legend('location','northwest')
 pCM1 =polyfit(hurCM1_avg,CAPE,1);
 
 figure;
+xlim([0.5 1])
 [PE_R16,epsilon_R16,RH_R16,CAPE_R16] = fn_plot_CAPE_and_RH_RCE(1,nanmean(T_LCL),nanmean(p_LCL),nanmean(T_LNB),nanmean(gammaLCL));
 hold on
 scatter(hurCM1_avg,CAPE,100,eps_impCM1*10^3,'filled','HandleVisibility','off')
@@ -200,7 +201,6 @@ xlabel('Lower-Tropospheric Relative Humidity')
 title('Perturbed Physics Ensemble')
 cc = colorbar;
 ylabel(cc,'Entrainment')
-xlim([0.5 1])
 % ylim([0 300])
 caxis([0.1 0.4])
 

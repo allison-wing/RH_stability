@@ -65,7 +65,7 @@ if doplot==1
     % figure
     
     set(gca,'ylim',[0 6000])
-    set(gca,'xlim',[0 1])
+%     set(gca,'xlim',[0 1])
     hold on
     
     % Plot the lines of constant precipitation efficiency
